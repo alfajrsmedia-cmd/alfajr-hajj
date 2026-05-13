@@ -1,143 +1,178 @@
-'use client'
+import { createClient } from "@/lib/supabase/server";
+import { Users, Building2, UserCog, Home, AlertCircle } from "lucide-react";
+import Link from "next/link";
 
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
+export default async function DashboardPage() {
+  const supabase = await createClient();
 
-const FLOOR_NAMES: Record<number, string> = {
-  1: 'الأول', 2: 'الثاني', 3: 'الثالث',
-  4: 'الرابع', 5: 'الخامس', 6: 'السادس'
-}
+  // Get all stats in parallel
+  const [
+    { count: pilgrimsCount },
+    { count: roomsCount },
+    { count: groupsCount },
+    { count: assignmentsCount },
+    { data: occupancy },
+  ] = await Promise.all([
+    supabase.from("pilgrims").select("*", { count: "exact", head: true }),
+    supabase.from("rooms").select("*", { count: "exact", head: true }),
+    supabase.from("groups").select("*", { count: "exact", head: true }),
+    supabase
+      .from("housing_assignments")
+      .select("*", { count: "exact", head: true })
+      .eq("is_current", true),
+    supabase
+      .from("v_room_occupancy")
+      .select("floor_number, occupied, available, capacity"),
+  ]);
 
-export default function SearchPage() {
-  const router = useRouter()
-  const [query, setQuery] = useState('')
-  const [results, setResults] = useState<any[]>([])
-  const [loading, setLoading] = useState(false)
-  const [searched, setSearched] = useState(false)
-  const supabase = createClient()
+  // Floor-level stats
+  const floorStats: Record<
+    number,
+    { occupied: number; capacity: number; rooms: number }
+  > = {};
+  occupancy?.forEach((r: any) => {
+    if (!floorStats[r.floor_number]) {
+      floorStats[r.floor_number] = { occupied: 0, capacity: 0, rooms: 0 };
+    }
+    floorStats[r.floor_number].occupied += r.occupied;
+    floorStats[r.floor_number].capacity += r.capacity;
+    floorStats[r.floor_number].rooms += 1;
+  });
 
-  useEffect(() => {
-    const auth = sessionStorage.getItem('adminAuth')
-    if (auth !== 'true') router.push('/admin/login')
-  }, [router])
-
-  async function doSearch() {
-    if (!query.trim()) return
-    setLoading(true)
-    setSearched(true)
-
-    const { data } = await supabase
-      .from('pilgrims')
-      .select(`id, full_name,
-        groups(group_number, leader_name),
-        housing_assignments(
-          rooms(room_number, floors(floor_number))
-        )`)
-      .ilike('full_name', `%${query.trim()}%`)
-      .limit(50)
-
-    setResults(data || [])
-    setLoading(false)
-  }
+  const unassigned = (pilgrimsCount || 0) - (assignmentsCount || 0);
 
   return (
-    <div className="p-6 max-w-3xl">
-      <h1 className="text-2xl font-bold text-slate-900 mb-6">🔍 البحث التفصيلي</h1>
+    <div>
+      <header className="mb-8">
+        <h1 className="text-2xl md:text-3xl font-bold text-slate-900">
+          لوحة التحكم
+        </h1>
+        <p className="text-slate-500 mt-1">
+          نظرة عامة على حملة الحج - الفجر للحج والعمرة
+        </p>
+      </header>
 
-      <div className="flex gap-3 mb-8">
-        <input
-          type="text"
-          value={query}
-          onChange={e => setQuery(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && doSearch()}
-          placeholder="ابحث بالاسم..."
-          className="flex-1 px-4 py-3 border border-slate-300 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-blue-400"
-          autoFocus
+      {/* Stats Grid */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <StatCard
+          label="إجمالي الحجاج"
+          value={pilgrimsCount || 0}
+          icon={Users}
+          color="emerald"
+          href="/admin/pilgrims"
         />
-        <button
-          onClick={doSearch}
-          disabled={loading}
-          className="px-6 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 disabled:opacity-50 transition">
-          {loading ? '...' : 'بحث'}
-        </button>
+        <StatCard
+          label="إجمالي الغرف"
+          value={roomsCount || 0}
+          icon={Home}
+          color="primary"
+          href="/admin/rooms"
+        />
+        <StatCard
+          label="المجموعات"
+          value={groupsCount || 0}
+          icon={UserCog}
+          color="purple"
+          href="/admin/groups"
+        />
+        <StatCard
+          label="حجاج مُسكّنين"
+          value={assignmentsCount || 0}
+          icon={Building2}
+          color="amber"
+        />
       </div>
 
-      {loading && (
-        <div className="text-center py-12 text-slate-400">
-          <div className="animate-spin w-8 h-8 border-2 border-blue-400 border-t-transparent rounded-full mx-auto mb-3"></div>
-          جاري البحث...
+      {/* Unassigned warning */}
+      {unassigned > 0 && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="font-medium text-amber-900">
+              {unassigned} حاج غير مُسكّنين
+            </p>
+            <p className="text-sm text-amber-700 mt-1">
+              يحتاجون تعيين غرفة. يمكنك التسكين من{" "}
+              <Link href="/admin/pilgrims" className="underline">
+                صفحة الحجاج
+              </Link>
+              .
+            </p>
+          </div>
         </div>
       )}
 
-      {!loading && searched && results.length === 0 && (
-        <div className="text-center py-12 text-slate-400">
-          لا توجد نتائج لـ «{query}»
-        </div>
-      )}
-
-      {!loading && results.length > 0 && (
+      {/* Floor distribution */}
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+        <h2 className="font-bold text-slate-900 mb-4">
+          التوزيع على الطوابق
+        </h2>
         <div className="space-y-3">
-          <p className="text-sm text-slate-500 mb-4">{results.length} نتيجة</p>
-          {results.map(p => {
-            const ha = p.housing_assignments?.[0]
-            const room = ha?.rooms
-            const floor = room?.floors?.floor_number
-            return (
-              <div key={p.id}
-                className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <h3 className="font-bold text-slate-900 text-base">{p.full_name}</h3>
-                    {p.groups?.leader_name && (
-                      <p className="text-sm text-slate-500 mt-0.5">
-                        مسؤول المجموعة: {p.groups.leader_name}
-                      </p>
-                    )}
-                  </div>
-                  {p.groups?.group_number && (
-                    <span className="bg-amber-50 text-amber-700 px-3 py-1 rounded-full text-sm font-bold border border-amber-200 flex-shrink-0">
-                      مجموعة {p.groups.group_number}
+          {Object.entries(floorStats)
+            .sort(([a], [b]) => parseInt(a) - parseInt(b))
+            .map(([floor, stats]) => {
+              const percent = (stats.occupied / stats.capacity) * 100;
+              return (
+                <div key={floor}>
+                  <div className="flex items-center justify-between text-sm mb-1">
+                    <span className="font-medium text-slate-700">
+                      الطابق {floor}
+                      <span className="text-xs text-slate-500 mr-2">
+                        ({stats.rooms} غرفة)
+                      </span>
                     </span>
-                  )}
+                    <span className="text-slate-600 arabic-num">
+                      {stats.occupied} / {stats.capacity}
+                    </span>
+                  </div>
+                  <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-emerald-500 transition-all"
+                      style={{ width: `${Math.min(percent, 100)}%` }}
+                    />
+                  </div>
                 </div>
-                <div className="mt-4 flex gap-4 flex-wrap">
-                  {floor && (
-                    <div className="flex items-center gap-2 bg-purple-50 px-3 py-2 rounded-lg">
-                      <span className="text-purple-500">🏨</span>
-                      <div>
-                        <p className="text-xs text-slate-500">الدور</p>
-                        <p className="font-semibold text-purple-800">{FLOOR_NAMES[floor] || floor}</p>
-                      </div>
-                    </div>
-                  )}
-                  {room?.room_number && (
-                    <div className="flex items-center gap-2 bg-blue-50 px-3 py-2 rounded-lg">
-                      <span className="text-blue-500">🚪</span>
-                      <div>
-                        <p className="text-xs text-slate-500">الغرفة</p>
-                        <p className="font-bold text-blue-800 text-lg">{room.room_number}</p>
-                      </div>
-                    </div>
-                  )}
-                  {!room && (
-                    <div className="bg-orange-50 px-3 py-2 rounded-lg text-orange-700 text-sm">
-                      لم يُحدد تسكين
-                    </div>
-                  )}
-                </div>
-              </div>
-            )
-          })}
+              );
+            })}
         </div>
-      )}
-
-      {!searched && (
-        <div className="text-center py-16 text-slate-300">
-          <p className="text-5xl mb-4">🔍</p>
-          <p className="text-slate-400">ابحث عن أي حاج بالاسم</p>
-        </div>
-      )}
+      </div>
     </div>
-  )
+  );
+}
+
+function StatCard({
+  label,
+  value,
+  icon: Icon,
+  color,
+  href,
+}: {
+  label: string;
+  value: number;
+  icon: any;
+  color: string;
+  href?: string;
+}) {
+  const colors: any = {
+    emerald: "bg-emerald-50 text-emerald-700",
+    primary: "bg-primary-50 text-primary-700",
+    purple: "bg-purple-50 text-purple-700",
+    amber: "bg-amber-50 text-amber-700",
+  };
+
+  const content = (
+    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 hover:shadow-md transition">
+      <div
+        className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 ${colors[color]}`}
+      >
+        <Icon className="w-6 h-6" />
+      </div>
+      <div className="text-3xl font-bold text-slate-900 arabic-num">
+        {value}
+      </div>
+      <div className="text-sm text-slate-500 mt-1">{label}</div>
+    </div>
+  );
+
+  return href ? <Link href={href}>{content}</Link> : content;
 }
