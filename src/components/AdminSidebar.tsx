@@ -14,6 +14,7 @@ import {
   Plane,
   Search,
   TableProperties,
+  Flag,
 } from "lucide-react";
 import clsx from "clsx";
 
@@ -23,6 +24,7 @@ const links = [
   { href: "/admin/rooms", label: "الغرف والتسكين", icon: Building2 },
   { href: "/admin/groups", label: "المجموعات", icon: UserCog },
   { href: "/admin/programs", label: "البرامج", icon: Plane },
+  { href: "/admin/campaign", label: "الحملة", icon: Flag },
   { href: "/admin/search", label: "البحث التفصيلي", icon: Search },
   { href: "/admin/final-table", label: "الجدول النهائي", icon: TableProperties },
   { href: "/admin/print", label: "كشوف الطباعة", icon: Printer },
