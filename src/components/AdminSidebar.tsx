@@ -12,6 +12,7 @@ import {
   LogOut,
   Menu,
   X,
+  Plane,
 } from "lucide-react";
 import clsx from "clsx";
 
@@ -20,6 +21,7 @@ const links = [
   { href: "/admin/pilgrims", label: "الحجاج", icon: Users },
   { href: "/admin/rooms", label: "الغرف والتسكين", icon: Building2 },
   { href: "/admin/groups", label: "المجموعات", icon: UserCog },
+  { href: "/admin/programs", label: "البرامج", icon: Plane },
   { href: "/admin/print", label: "كشوف الطباعة", icon: Printer },
 ];
 
@@ -36,7 +38,6 @@ export default function AdminSidebar() {
 
   return (
     <>
-      {/* Mobile toggle */}
       <button
         onClick={() => setOpen(!open)}
         className="md:hidden fixed top-4 left-4 z-50 bg-white p-2 rounded-lg shadow-md"
@@ -44,7 +45,6 @@ export default function AdminSidebar() {
         {open ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
       </button>
 
-      {/* Sidebar */}
       <aside
         className={clsx(
           "fixed top-0 right-0 h-screen w-64 bg-white border-l border-slate-200 z-40 transition-transform",
@@ -53,7 +53,6 @@ export default function AdminSidebar() {
         )}
       >
         <div className="flex flex-col h-full">
-          {/* Logo */}
           <div className="p-6 border-b border-slate-100">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-emerald-600 rounded-full flex items-center justify-center">
@@ -66,7 +65,6 @@ export default function AdminSidebar() {
             </div>
           </div>
 
-          {/* Links */}
           <nav className="flex-1 p-4 space-y-1">
             {links.map((link) => {
               const Icon = link.icon;
@@ -91,7 +89,6 @@ export default function AdminSidebar() {
             })}
           </nav>
 
-          {/* Logout */}
           <div className="p-4 border-t border-slate-100">
             <button
               onClick={handleLogout}
