@@ -1,97 +1,161 @@
-import { createClient } from "@/lib/supabase/server";
-import Link from "next/link";
-import { Home, Users } from "lucide-react";
+'use client'
 
-export default async function RoomsPage() {
-  const supabase = await createClient();
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
 
-  const { data: rooms } = await supabase
-    .from("v_room_occupancy")
-    .select("*")
-    .order("floor_number")
-    .order("room_number");
-
-  // Group rooms by floor
-  const byFloor: Record<number, any[]> = {};
-  rooms?.forEach((r: any) => {
-    if (!byFloor[r.floor_number]) byFloor[r.floor_number] = [];
-    byFloor[r.floor_number].push(r);
-  });
-
-  return (
-    <div>
-      <header className="mb-6">
-        <h1 className="text-2xl md:text-3xl font-bold text-slate-900">
-          الغرف والتسكين
-        </h1>
-        <p className="text-slate-500 mt-1 arabic-num">
-          {rooms?.length || 0} غرفة موزعة على {Object.keys(byFloor).length}{" "}
-          طوابق
-        </p>
-      </header>
-
-      <div className="space-y-8">
-        {Object.entries(byFloor)
-          .sort(([a], [b]) => parseInt(a) - parseInt(b))
-          .map(([floor, floorRooms]) => (
-            <FloorSection
-              key={floor}
-              floorNumber={parseInt(floor)}
-              rooms={floorRooms}
-            />
-          ))}
-      </div>
-    </div>
-  );
+const FLOOR_NAMES: Record<number, string> = {
+  1: 'الأول', 2: 'الثاني', 3: 'الثالث',
+  4: 'الرابع', 5: 'الخامس', 6: 'السادس'
 }
 
-function FloorSection({
-  floorNumber,
-  rooms,
-}: {
-  floorNumber: number;
-  rooms: any[];
-}) {
-  const totalOccupied = rooms.reduce((s, r) => s + r.occupied, 0);
-  const totalCapacity = rooms.reduce((s, r) => s + r.capacity, 0);
+export default function FloorsPage() {
+  const router = useRouter()
+  const [selectedFloor, setSelectedFloor] = useState(1)
+  const [rooms, setRooms] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [search, setSearch] = useState('')
+  const supabase = createClient()
+
+  useEffect(() => {
+    const auth = sessionStorage.getItem('adminAuth')
+    if (auth !== 'true') router.push('/admin/login')
+  }, [router])
+
+  useEffect(() => {
+    loadRooms(selectedFloor)
+  }, [selectedFloor])
+
+  async function loadRooms(floor: number) {
+    setLoading(true)
+    const { data: floorData } = await supabase
+      .from('floors').select('id').eq('floor_number', floor).single()
+    if (!floorData) { setLoading(false); return }
+
+    const { data } = await supabase
+      .from('rooms')
+      .select(`id, room_number, capacity,
+        housing_assignments(
+          pilgrim_id,
+          pilgrims(full_name, groups(group_number))
+        )`)
+      .eq('floor_id', floorData.id)
+      .order('room_number')
+
+    setRooms(data || [])
+    setLoading(false)
+  }
+
+  const filteredRooms = rooms.filter(r => {
+    if (!search) return true
+    const q = search.toLowerCase()
+    if (r.room_number.includes(q)) return true
+    return r.housing_assignments?.some((ha: any) =>
+      ha.pilgrims?.full_name?.includes(search) ||
+      String(ha.pilgrims?.groups?.group_number).includes(q)
+    )
+  })
+
+  const totalPilgrims = rooms.reduce((s, r) => s + (r.housing_assignments?.length || 0), 0)
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-      <div className="bg-slate-50 border-b border-slate-200 p-4 flex items-center justify-between">
-        <h2 className="font-bold text-slate-900 text-lg">
-          الطابق {floorNumber}
-        </h2>
-        <span className="text-sm text-slate-600 arabic-num">
-          {totalOccupied} / {totalCapacity}
-        </span>
+    <div className="p-6">
+      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+        <h1 className="text-2xl font-bold text-slate-900">🏨 الأدوار والغرف</h1>
+        <div className="flex gap-3 items-center">
+          <span className="text-sm text-slate-500">
+            {rooms.length} غرفة · {totalPilgrims} حاج
+          </span>
+          <input
+            type="text"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="بحث بالاسم أو رقم الغرفة..."
+            className="px-3 py-2 border border-slate-300 rounded-lg text-sm w-56 focus:outline-none focus:ring-2 focus:ring-blue-400"
+          />
+        </div>
       </div>
 
-      <div className="p-4 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
-        {rooms.map((room) => (
-          <Link
-            key={room.room_id}
-            href={`/admin/rooms/${room.room_id}`}
-            className={`p-3 rounded-xl border-2 transition hover:shadow-md ${
-              room.occupied === 0
-                ? "bg-slate-50 border-slate-200"
-                : room.occupied >= room.capacity
-                  ? "bg-emerald-50 border-emerald-300"
-                  : "bg-amber-50 border-amber-300"
-            }`}
-          >
-            <div className="flex items-center justify-between mb-2">
-              <Home className="w-4 h-4 text-slate-600" />
-              <span className="font-bold text-slate-900 arabic-num">
-                {room.room_number}
-              </span>
-            </div>
-            <div className="flex items-center gap-1 text-xs text-slate-600 arabic-num">
-              <Users className="w-3 h-3" />
-              {room.occupied} / {room.capacity}
-            </div>
-          </Link>
-        ))}
+      {/* Floor tabs */}
+      <div className="flex gap-2 flex-wrap mb-6">
+        {[1, 2, 3, 4, 5, 6].map(f => {
+          const count = f === selectedFloor ? rooms.length : 0
+          return (
+            <button key={f}
+              onClick={() => setSelectedFloor(f)}
+              className={`px-4 py-2 rounded-full text-sm font-medium transition border ${
+                selectedFloor === f
+                  ? 'bg-blue-600 text-white border-blue-600'
+                  : 'bg-white text-slate-600 border-slate-300 hover:border-blue-400'
+              }`}>
+              الدور {FLOOR_NAMES[f]}
+              {selectedFloor === f && count > 0 && (
+                <span className="mr-1 text-xs opacity-75">({count})</span>
+              )}
+            </button>
+          )
+        })}
       </div>
+
+      {loading ? (
+        <div className="flex items-center justify-center py-20 text-slate-400">
+          <div className="text-center">
+            <div className="animate-spin w-8 h-8 border-2 border-blue-400 border-t-transparent rounded-full mx-auto mb-3"></div>
+            جاري تحميل الغرف...
+          </div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {filteredRooms.map(room => {
+            const occupants = room.housing_assignments || []
+            const isFull = occupants.length >= room.capacity
+            return (
+              <div key={room.id}
+                className={`bg-white rounded-xl border overflow-hidden shadow-sm transition hover:shadow-md ${
+                  isFull ? 'border-green-200' : occupants.length === 0 ? 'border-slate-100' : 'border-blue-100'
+                }`}>
+                <div className={`px-4 py-3 flex items-center justify-between border-b ${
+                  isFull ? 'bg-green-50 border-green-100' : occupants.length === 0 ? 'bg-slate-50 border-slate-100' : 'bg-blue-50 border-blue-100'
+                }`}>
+                  <span className={`text-xl font-bold ${isFull ? 'text-green-700' : 'text-blue-700'}`}>
+                    {room.room_number}
+                  </span>
+                  <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                    isFull ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-600'
+                  }`}>
+                    {occupants.length} / {room.capacity}
+                  </span>
+                </div>
+                <div className="p-2 min-h-[60px]">
+                  {occupants.length === 0 ? (
+                    <p className="text-xs text-slate-300 text-center py-4">غرفة فارغة</p>
+                  ) : (
+                    occupants.map((ha: any, i: number) => (
+                      <div key={i}
+                        className="flex items-center justify-between px-2 py-1.5 rounded hover:bg-slate-50 gap-2">
+                        <span className="text-sm text-slate-800 truncate flex-1">
+                          {ha.pilgrims?.full_name}
+                        </span>
+                        {ha.pilgrims?.groups?.group_number && (
+                          <span className="text-xs font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full flex-shrink-0 border border-amber-200">
+                            {ha.pilgrims.groups.group_number}
+                          </span>
+                        )}
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {!loading && filteredRooms.length === 0 && (
+        <div className="text-center py-16 text-slate-400">
+          لا توجد نتائج للبحث
+        </div>
+      )}
     </div>
-  );
+  )
 }

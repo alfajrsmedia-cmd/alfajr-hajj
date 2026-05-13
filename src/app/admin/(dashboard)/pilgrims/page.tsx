@@ -1,199 +1,170 @@
-"use client";
+'use client'
 
-import { useState, useEffect } from "react";
-import Link from "next/link";
-import { Search, Filter, ChevronLeft, ChevronRight } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
-
-const PAGE_SIZE = 25;
+import { useState, useEffect, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
 
 export default function PilgrimsPage() {
-  const [search, setSearch] = useState("");
-  const [floorFilter, setFloorFilter] = useState<string>("");
-  const [page, setPage] = useState(0);
-  const [pilgrims, setPilgrims] = useState<any[]>([]);
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const router = useRouter()
+  const [pilgrims, setPilgrims] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [search, setSearch] = useState('')
+  const [floorFilter, setFloorFilter] = useState('')
+  const [total, setTotal] = useState(0)
+  const [page, setPage] = useState(0)
+  const PAGE_SIZE = 50
+  const supabase = createClient()
 
   useEffect(() => {
-    loadPilgrims();
-  }, [search, floorFilter, page]);
+    const auth = sessionStorage.getItem('adminAuth')
+    if (auth !== 'true') router.push('/admin/login')
+  }, [router])
 
-  async function loadPilgrims() {
-    setLoading(true);
-    const supabase = createClient();
-
+  const loadPilgrims = useCallback(async () => {
+    setLoading(true)
     let query = supabase
-      .from("v_pilgrim_housing")
-      .select("*", { count: "exact" })
+      .from('pilgrims')
+      .select(`id, full_name,
+        groups(group_number, leader_name),
+        housing_assignments(
+          rooms(room_number, floors(floor_number))
+        )`,
+        { count: 'exact' }
+      )
+      .order('full_name')
       .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1)
-      .order("pilgrim_id", { ascending: true });
 
-    if (search.trim()) {
-      query = query.or(
-        `full_name.ilike.%${search}%,passport_number.ilike.%${search}%,phone.ilike.%${search}%`
-      );
+    if (search) {
+      query = query.ilike('full_name', `%${search}%`)
     }
 
-    if (floorFilter) {
-      query = query.eq("floor_number", parseInt(floorFilter));
-    }
+    const { data, count } = await query
+    setPilgrims(data || [])
+    setTotal(count || 0)
+    setLoading(false)
+  }, [search, page, floorFilter])
 
-    const { data, count } = await query;
-    setPilgrims(data || []);
-    setTotal(count || 0);
-    setLoading(false);
+  useEffect(() => {
+    const timer = setTimeout(loadPilgrims, 300)
+    return () => clearTimeout(timer)
+  }, [loadPilgrims])
+
+  useEffect(() => { setPage(0) }, [search, floorFilter])
+
+  const FLOOR_NAMES: Record<string, string> = {
+    '1': 'الأول', '2': 'الثاني', '3': 'الثالث',
+    '4': 'الرابع', '5': 'الخامس', '6': 'السادس'
   }
 
-  const totalPages = Math.ceil(total / PAGE_SIZE);
-
   return (
-    <div>
-      <header className="mb-6">
-        <h1 className="text-2xl md:text-3xl font-bold text-slate-900">
-          الحجاج
-        </h1>
-        <p className="text-slate-500 mt-1 arabic-num">
-          إجمالي: {total} حاج
-        </p>
-      </header>
+    <div className="p-6">
+      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+        <h1 className="text-2xl font-bold text-slate-900">🧕 الحجاج</h1>
+        <span className="text-sm text-slate-500">{total} حاج</span>
+      </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-4 mb-6 flex flex-col md:flex-row gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              setPage(0);
-            }}
-            placeholder="ابحث بالاسم، الجواز، أو الهاتف..."
-            className="w-full pr-10 pl-4 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none text-sm"
-          />
-        </div>
-        <select
-          value={floorFilter}
-          onChange={(e) => {
-            setFloorFilter(e.target.value);
-            setPage(0);
-          }}
-          className="px-4 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none text-sm bg-white"
-        >
-          <option value="">كل الطوابق</option>
-          {[1, 2, 3, 4, 5, 6].map((f) => (
-            <option key={f} value={f}>
-              الطابق {f}
-            </option>
-          ))}
-        </select>
+      <div className="flex gap-3 mb-5 flex-wrap">
+        <input
+          type="text"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          placeholder="بحث بالاسم..."
+          className="px-3 py-2 border border-slate-300 rounded-lg text-sm flex-1 max-w-xs focus:outline-none focus:ring-2 focus:ring-blue-400"
+        />
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-slate-50 border-b border-slate-200">
-              <tr>
-                <th className="text-right p-3 font-medium text-slate-700">
-                  الاسم
-                </th>
-                <th className="text-right p-3 font-medium text-slate-700">
-                  المجموعة
-                </th>
-                <th className="text-right p-3 font-medium text-slate-700">
-                  الطابق
-                </th>
-                <th className="text-right p-3 font-medium text-slate-700">
-                  الغرفة
-                </th>
-                <th className="text-right p-3 font-medium text-slate-700">
-                  الجواز
-                </th>
-                <th className="text-right p-3 font-medium text-slate-700">
-                  الهاتف
-                </th>
-                <th className="p-3 w-20"></th>
+            <thead>
+              <tr className="bg-slate-50 border-b border-slate-200">
+                <th className="text-right px-4 py-3 font-semibold text-slate-700">#</th>
+                <th className="text-right px-4 py-3 font-semibold text-slate-700">الاسم</th>
+                <th className="text-right px-4 py-3 font-semibold text-slate-700">المجموعة</th>
+                <th className="text-right px-4 py-3 font-semibold text-slate-700">المسؤول</th>
+                <th className="text-right px-4 py-3 font-semibold text-slate-700">الدور</th>
+                <th className="text-right px-4 py-3 font-semibold text-slate-700">الغرفة</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
-              {loading && (
+            <tbody>
+              {loading ? (
                 <tr>
-                  <td colSpan={7} className="p-8 text-center text-slate-400">
+                  <td colSpan={6} className="text-center py-12 text-slate-400">
+                    <div className="animate-spin w-6 h-6 border-2 border-blue-400 border-t-transparent rounded-full mx-auto mb-2"></div>
                     جاري التحميل...
                   </td>
                 </tr>
-              )}
-              {!loading && pilgrims.length === 0 && (
+              ) : pilgrims.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="p-8 text-center text-slate-400">
-                    لا توجد نتائج
-                  </td>
+                  <td colSpan={6} className="text-center py-12 text-slate-400">لا توجد نتائج</td>
                 </tr>
+              ) : (
+                pilgrims.map((p, i) => {
+                  const ha = p.housing_assignments?.[0]
+                  const room = ha?.rooms
+                  const floor = room?.floors?.floor_number
+                  return (
+                    <tr key={p.id}
+                      className="border-b border-slate-100 hover:bg-slate-50 transition">
+                      <td className="px-4 py-3 text-slate-400 text-xs">{page * PAGE_SIZE + i + 1}</td>
+                      <td className="px-4 py-3 font-medium text-slate-900">{p.full_name}</td>
+                      <td className="px-4 py-3">
+                        {p.groups?.group_number ? (
+                          <span className="bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full text-xs font-bold border border-amber-200">
+                            {p.groups.group_number}
+                          </span>
+                        ) : (
+                          <span className="text-slate-300 text-xs">—</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-slate-600 text-xs max-w-[180px] truncate">
+                        {p.groups?.leader_name || '—'}
+                      </td>
+                      <td className="px-4 py-3">
+                        {floor ? (
+                          <span className="bg-purple-50 text-purple-700 px-2 py-0.5 rounded text-xs">
+                            {FLOOR_NAMES[String(floor)] || floor}
+                          </span>
+                        ) : <span className="text-slate-300 text-xs">—</span>}
+                      </td>
+                      <td className="px-4 py-3">
+                        {room?.room_number ? (
+                          <span className="bg-blue-50 text-blue-700 px-2 py-0.5 rounded text-xs font-bold">
+                            {room.room_number}
+                          </span>
+                        ) : <span className="text-slate-300 text-xs">—</span>}
+                      </td>
+                    </tr>
+                  )
+                })
               )}
-              {!loading &&
-                pilgrims.map((p: any) => (
-                  <tr key={p.pilgrim_id} className="hover:bg-slate-50">
-                    <td className="p-3 font-medium text-slate-900">
-                      {p.full_name}
-                    </td>
-                    <td className="p-3 text-slate-600 arabic-num">
-                      {p.group_number || "—"}
-                    </td>
-                    <td className="p-3 text-slate-600 arabic-num">
-                      {p.floor_number || "—"}
-                    </td>
-                    <td className="p-3">
-                      <span className="bg-emerald-50 text-emerald-700 px-2 py-1 rounded text-xs font-medium arabic-num">
-                        {p.room_number || "—"}
-                      </span>
-                    </td>
-                    <td className="p-3 text-slate-500 text-xs arabic-num">
-                      {p.passport_number || "—"}
-                    </td>
-                    <td className="p-3 text-slate-500 text-xs arabic-num">
-                      {p.phone || "—"}
-                    </td>
-                    <td className="p-3">
-                      <Link
-                        href={`/admin/pilgrims/${p.pilgrim_id}`}
-                        className="text-emerald-700 hover:underline text-xs"
-                      >
-                        عرض
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
             </tbody>
           </table>
         </div>
 
         {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="p-4 border-t border-slate-100 flex items-center justify-between">
-            <span className="text-sm text-slate-500 arabic-num">
-              صفحة {page + 1} من {totalPages}
+        {total > PAGE_SIZE && (
+          <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100 bg-slate-50">
+            <button
+              disabled={page === 0}
+              onClick={() => setPage(p => p - 1)}
+              className="px-3 py-1.5 text-sm border rounded disabled:opacity-40 hover:bg-white transition">
+              السابق
+            </button>
+            <span className="text-xs text-slate-500">
+              {page * PAGE_SIZE + 1} – {Math.min((page + 1) * PAGE_SIZE, total)} من {total}
             </span>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setPage(Math.max(0, page - 1))}
-                disabled={page === 0}
-                className="p-2 rounded-lg border border-slate-200 disabled:opacity-40 hover:bg-slate-50"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => setPage(Math.min(totalPages - 1, page + 1))}
-                disabled={page >= totalPages - 1}
-                className="p-2 rounded-lg border border-slate-200 disabled:opacity-40 hover:bg-slate-50"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-            </div>
+            <button
+              disabled={(page + 1) * PAGE_SIZE >= total}
+              onClick={() => setPage(p => p + 1)}
+              className="px-3 py-1.5 text-sm border rounded disabled:opacity-40 hover:bg-white transition">
+              التالي
+            </button>
           </div>
         )}
       </div>
     </div>
-  );
+  )
 }
