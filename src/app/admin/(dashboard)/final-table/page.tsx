@@ -1,38 +1,151 @@
-import { createClient } from "@/lib/supabase/server";
-import { TableProperties } from "lucide-react";
+"use client";
 
-export default async function FinalTablePage() {
-  const supabase = await createClient();
+import { useState } from "react";
+import { TableProperties, Plus, Download } from "lucide-react";
 
-  const { data: pilgrims } = await supabase
-    .from("pilgrims")
-    .select("program, gender, room_type, level");
+type Campaign = {
+  id: number;
+  name: string;
+  malePilgrims: number;
+  femalePilgrims: number;
+  maleAdmins: number;
+  femaleAdmins: number;
+};
 
-  const programs = [...new Set((pilgrims || []).map((p: any) => p.program))].filter(Boolean);
+const initialCampaigns: Campaign[] = [];
 
-  const rows = programs.map((program) => {
-    const group = (pilgrims || []).filter((p: any) => p.program === program);
-    const males = group.filter((p: any) => p.gender === "male").length;
-    const females = group.filter((p: any) => p.gender === "female").length;
-    const total = group.length;
-    return { program, males, females, total };
+export default function FinalTablePage() {
+  const [campaigns, setCampaigns] = useState<Campaign[]>(initialCampaigns);
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({
+    name: "",
+    malePilgrims: "",
+    femalePilgrims: "",
+    maleAdmins: "",
+    femaleAdmins: "",
   });
 
-  const totals = rows.reduce(
-    (acc, r) => ({
-      males: acc.males + r.males,
-      females: acc.females + r.females,
-      total: acc.total + r.total,
-    }),
-    { males: 0, females: 0, total: 0 }
-  );
+  const totalPilgrimsMale = campaigns.reduce((s, c) => s + c.malePilgrims, 0);
+  const totalPilgrimsFemale = campaigns.reduce((s, c) => s + c.femalePilgrims, 0);
+  const totalPilgrims = totalPilgrimsMale + totalPilgrimsFemale;
+  const totalAdminsMale = campaigns.reduce((s, c) => s + c.maleAdmins, 0);
+  const totalAdminsFemale = campaigns.reduce((s, c) => s + c.femaleAdmins, 0);
+  const totalAdmins = totalAdminsMale + totalAdminsFemale;
+  const grandTotal = totalPilgrims + totalAdmins;
+
+  function handleAdd() {
+    if (!form.name) return;
+    setCampaigns([...campaigns, {
+      id: Date.now(),
+      name: form.name,
+      malePilgrims: Number(form.malePilgrims) || 0,
+      femalePilgrims: Number(form.femalePilgrims) || 0,
+      maleAdmins: Number(form.maleAdmins) || 0,
+      femaleAdmins: Number(form.femaleAdmins) || 0,
+    }]);
+    setForm({ name: "", malePilgrims: "", femalePilgrims: "", maleAdmins: "", femaleAdmins: "" });
+    setShowForm(false);
+  }
+
+  function handleDelete(id: number) {
+    setCampaigns(campaigns.filter(c => c.id !== id));
+  }
+
+  function exportExcel() {
+    const rows = [
+      ["الحملة", "حجاج رجال", "حجاج نساء", "مجموع الحجاج", "إداريين رجال", "إداريين نساء", "مجموع الإداريين", "الإجمالي"],
+      ...campaigns.map(c => [
+        c.name,
+        c.malePilgrims,
+        c.femalePilgrims,
+        c.malePilgrims + c.femalePilgrims,
+        c.maleAdmins,
+        c.femaleAdmins,
+        c.maleAdmins + c.femaleAdmins,
+        c.malePilgrims + c.femalePilgrims + c.maleAdmins + c.femaleAdmins,
+      ]),
+      ["الإجمالي", totalPilgrimsMale, totalPilgrimsFemale, totalPilgrims, totalAdminsMale, totalAdminsFemale, totalAdmins, grandTotal],
+    ];
+    const csv = rows.map(r => r.join(",")).join("\n");
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "الجدول_النهائي.csv";
+    a.click();
+  }
 
   return (
     <div>
-      <header className="mb-6 flex items-center gap-2">
-        <TableProperties className="w-6 h-6 text-slate-600" />
-        <h1 className="text-2xl font-bold text-slate-900">الجدول النهائي</h1>
+      <header className="mb-6 flex items-center justify-between flex-wrap gap-3">
+        <div className="flex items-center gap-2">
+          <TableProperties className="w-6 h-6 text-slate-600" />
+          <h1 className="text-2xl font-bold text-slate-900">الجدول النهائي</h1>
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={exportExcel}
+            className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition"
+          >
+            <Download className="w-4 h-4" />
+            تصدير Excel ↓
+          </button>
+          <button
+            onClick={() => setShowForm(true)}
+            className="flex items-center gap-2 border border-slate-200 hover:bg-slate-50 text-slate-700 px-4 py-2 rounded-lg text-sm font-medium transition"
+          >
+            <Plus className="w-4 h-4" />
+            إضافة حملة
+          </button>
+        </div>
       </header>
+
+      {/* Add Form */}
+      {showForm && (
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 mb-6">
+          <h2 className="font-bold text-slate-900 mb-4 text-right">إضافة حملة جديدة</h2>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            <input
+              placeholder="اسم الحملة"
+              value={form.name}
+              onChange={e => setForm({ ...form, name: e.target.value })}
+              className="col-span-2 md:col-span-3 border border-slate-200 rounded-lg px-3 py-2 text-right text-sm"
+            />
+            <input
+              placeholder="حجاج رجال"
+              type="number"
+              value={form.malePilgrims}
+              onChange={e => setForm({ ...form, malePilgrims: e.target.value })}
+              className="border border-slate-200 rounded-lg px-3 py-2 text-right text-sm"
+            />
+            <input
+              placeholder="حجاج نساء"
+              type="number"
+              value={form.femalePilgrims}
+              onChange={e => setForm({ ...form, femalePilgrims: e.target.value })}
+              className="border border-slate-200 rounded-lg px-3 py-2 text-right text-sm"
+            />
+            <input
+              placeholder="إداريين رجال"
+              type="number"
+              value={form.maleAdmins}
+              onChange={e => setForm({ ...form, maleAdmins: e.target.value })}
+              className="border border-slate-200 rounded-lg px-3 py-2 text-right text-sm"
+            />
+            <input
+              placeholder="إداريين نساء"
+              type="number"
+              value={form.femaleAdmins}
+              onChange={e => setForm({ ...form, femaleAdmins: e.target.value })}
+              className="border border-slate-200 rounded-lg px-3 py-2 text-right text-sm"
+            />
+          </div>
+          <div className="flex gap-2 mt-4 justify-end">
+            <button onClick={() => setShowForm(false)} className="px-4 py-2 text-sm text-slate-600 hover:bg-slate-50 rounded-lg border border-slate-200">إلغاء</button>
+            <button onClick={handleAdd} className="px-4 py-2 text-sm bg-emerald-600 text-white rounded-lg hover:bg-emerald-700">إضافة</button>
+          </div>
+        </div>
+      )}
 
       {/* Main Table */}
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden mb-6">
@@ -40,28 +153,58 @@ export default async function FinalTablePage() {
           <table className="w-full text-sm text-right">
             <thead className="bg-slate-50 border-b border-slate-100">
               <tr>
-                <th className="px-6 py-4 font-semibold text-slate-700">البرنامج</th>
-                <th className="px-6 py-4 font-semibold text-slate-700">رجال</th>
-                <th className="px-6 py-4 font-semibold text-slate-700">نساء</th>
-                <th className="px-6 py-4 font-semibold text-emerald-700">المجموع</th>
+                <th className="px-4 py-3 font-semibold text-slate-700 w-8"></th>
+                <th className="px-4 py-3 font-semibold text-slate-700">الحملة</th>
+                <th className="px-4 py-3 font-semibold text-slate-700">حجاج رجال</th>
+                <th className="px-4 py-3 font-semibold text-slate-700">حجاج نساء</th>
+                <th className="px-4 py-3 font-semibold text-emerald-700">مجموع الحجاج</th>
+                <th className="px-4 py-3 font-semibold text-slate-700">إداريين رجال</th>
+                <th className="px-4 py-3 font-semibold text-slate-700">إداريين نساء</th>
+                <th className="px-4 py-3 font-semibold text-slate-700">مجموع الإداريين</th>
+                <th className="px-4 py-3 font-semibold text-amber-600">الإجمالي</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
-              {rows.map((r) => (
-                <tr key={r.program} className="hover:bg-slate-50 transition">
-                  <td className="px-6 py-4 font-medium text-slate-800">{r.program}</td>
-                  <td className="px-6 py-4 text-slate-600">{r.males || "—"}</td>
-                  <td className="px-6 py-4 text-slate-600">{r.females || "—"}</td>
-                  <td className="px-6 py-4 font-bold text-emerald-700">{r.total}</td>
+              {campaigns.length === 0 && (
+                <tr>
+                  <td colSpan={9} className="px-4 py-8 text-center text-slate-400">لا توجد حملات — اضغط "إضافة حملة"</td>
                 </tr>
-              ))}
+              )}
+              {campaigns.map((c) => {
+                const totalP = c.malePilgrims + c.femalePilgrims;
+                const totalA = c.maleAdmins + c.femaleAdmins;
+                return (
+                  <tr key={c.id} className="hover:bg-slate-50 transition">
+                    <td className="px-4 py-3">
+                      <button onClick={() => handleDelete(c.id)} className="text-slate-300 hover:text-red-400 transition text-lg">🗑</button>
+                    </td>
+                    <td className="px-4 py-3 font-medium text-slate-800">{c.name}</td>
+                    <td className="px-4 py-3 text-slate-600">{c.malePilgrims}</td>
+                    <td className="px-4 py-3 text-slate-600">{c.femalePilgrims}</td>
+                    <td className="px-4 py-3 font-bold text-emerald-700">{totalP}</td>
+                    <td className="px-4 py-3">
+                      <span className="bg-slate-100 text-slate-700 px-2 py-1 rounded text-xs">{c.maleAdmins}</span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className="bg-slate-100 text-slate-700 px-2 py-1 rounded text-xs">{c.femaleAdmins}</span>
+                    </td>
+                    <td className="px-4 py-3 text-slate-600">{totalA}</td>
+                    <td className="px-4 py-3 font-bold text-amber-600">{totalP + totalA}</td>
+                  </tr>
+                );
+              })}
             </tbody>
             <tfoot className="bg-slate-50 border-t-2 border-slate-200">
               <tr>
-                <td className="px-6 py-4 font-bold text-slate-900">الإجمالي</td>
-                <td className="px-6 py-4 font-bold text-slate-700">{totals.males || "—"}</td>
-                <td className="px-6 py-4 font-bold text-slate-700">{totals.females || "—"}</td>
-                <td className="px-6 py-4 font-bold text-amber-600">{totals.total}</td>
+                <td></td>
+                <td className="px-4 py-3 font-bold text-slate-900">الإجمالي</td>
+                <td className="px-4 py-3 font-bold text-slate-700">{totalPilgrimsMale}</td>
+                <td className="px-4 py-3 font-bold text-slate-700">{totalPilgrimsFemale}</td>
+                <td className="px-4 py-3 font-bold text-emerald-700">{totalPilgrims}</td>
+                <td className="px-4 py-3 font-bold text-slate-700">{totalAdminsMale}</td>
+                <td className="px-4 py-3 font-bold text-slate-700">{totalAdminsFemale}</td>
+                <td className="px-4 py-3 font-bold text-slate-700">{totalAdmins}</td>
+                <td className="px-4 py-3 font-bold text-amber-600">{grandTotal}</td>
               </tr>
             </tfoot>
           </table>
@@ -71,24 +214,40 @@ export default async function FinalTablePage() {
       {/* Summary */}
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
         <div className="p-4 border-b border-slate-100 flex items-center gap-2">
-          <span className="text-lg">✅</span>
+          <span>✅</span>
           <h2 className="font-bold text-slate-900">الإجمالي الكلي</h2>
         </div>
-        <div className="p-6">
-          <div className="grid grid-cols-3 gap-4 text-center">
-            <div className="bg-slate-50 rounded-xl p-4">
-              <p className="text-slate-500 text-sm mb-1">رجال</p>
-              <p className="text-2xl font-bold text-slate-800">{totals.males || "—"}</p>
-            </div>
-            <div className="bg-slate-50 rounded-xl p-4">
-              <p className="text-slate-500 text-sm mb-1">نساء</p>
-              <p className="text-2xl font-bold text-slate-800">{totals.females || "—"}</p>
-            </div>
-            <div className="bg-emerald-50 rounded-xl p-4">
-              <p className="text-emerald-600 text-sm mb-1">الكلي</p>
-              <p className="text-2xl font-bold text-emerald-700">{totals.total}</p>
-            </div>
-          </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm text-right">
+            <thead className="bg-slate-50 border-b border-slate-100">
+              <tr>
+                <th className="px-6 py-3 font-semibold text-slate-700">الفئة</th>
+                <th className="px-6 py-3 font-semibold text-slate-700">رجال</th>
+                <th className="px-6 py-3 font-semibold text-slate-700">نساء</th>
+                <th className="px-6 py-3 font-semibold text-amber-600">المجموع</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-50">
+              <tr>
+                <td className="px-6 py-3 font-medium text-slate-800">الحجاج</td>
+                <td className="px-6 py-3 text-slate-600">{totalPilgrimsMale}</td>
+                <td className="px-6 py-3 text-slate-600">{totalPilgrimsFemale}</td>
+                <td className="px-6 py-3 font-bold text-amber-600">{totalPilgrims}</td>
+              </tr>
+              <tr>
+                <td className="px-6 py-3 font-medium text-slate-800">الإداريين</td>
+                <td className="px-6 py-3 text-slate-600">{totalAdminsMale}</td>
+                <td className="px-6 py-3 text-slate-600">{totalAdminsFemale}</td>
+                <td className="px-6 py-3 font-bold text-amber-600">{totalAdmins}</td>
+              </tr>
+              <tr className="bg-slate-50 font-bold">
+                <td className="px-6 py-3 text-slate-900">الكلي</td>
+                <td className="px-6 py-3 text-slate-700">{totalPilgrimsMale + totalAdminsMale}</td>
+                <td className="px-6 py-3 text-slate-700">{totalPilgrimsFemale + totalAdminsFemale}</td>
+                <td className="px-6 py-3 text-amber-600">{grandTotal}</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
