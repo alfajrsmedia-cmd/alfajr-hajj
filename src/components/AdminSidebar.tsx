@@ -1,5 +1,4 @@
 "use client";
-
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
@@ -13,6 +12,7 @@ import {
   Menu,
   X,
   Plane,
+  Search,
 } from "lucide-react";
 import clsx from "clsx";
 
@@ -22,6 +22,7 @@ const links = [
   { href: "/admin/rooms", label: "الغرف والتسكين", icon: Building2 },
   { href: "/admin/groups", label: "المجموعات", icon: UserCog },
   { href: "/admin/programs", label: "البرامج", icon: Plane },
+  { href: "/admin/search", label: "البحث التفصيلي", icon: Search },
   { href: "/admin/print", label: "كشوف الطباعة", icon: Printer },
 ];
 
@@ -44,7 +45,6 @@ export default function AdminSidebar() {
       >
         {open ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
       </button>
-
       <aside
         className={clsx(
           "fixed top-0 right-0 h-screen w-64 bg-white border-l border-slate-200 z-40 transition-transform",
@@ -64,7 +64,6 @@ export default function AdminSidebar() {
               </div>
             </div>
           </div>
-
           <nav className="flex-1 p-4 space-y-1">
             {links.map((link) => {
               const Icon = link.icon;
@@ -88,7 +87,6 @@ export default function AdminSidebar() {
               );
             })}
           </nav>
-
           <div className="p-4 border-t border-slate-100">
             <button
               onClick={handleLogout}
