@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Search, Users, Building2, Home } from "lucide-react";
 
@@ -19,8 +19,7 @@ export default function SearchPage() {
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
 
-  async function handleSearch(e: React.ChangeEvent<HTMLInputElement>) {
-    const val = e.target.value;
+  const handleSearch = useCallback(async (val: string) => {
     setQuery(val);
     if (val.length < 2) {
       setResults([]);
@@ -29,37 +28,11 @@ export default function SearchPage() {
     }
     setLoading(true);
     const supabase = createClient();
-
-    const { data } = await supabase
-      .from("pilgrims")
-      .select(`
-        id,
-        full_name,
-        groups ( group_number, leader_name ),
-        housing_assignments (
-          is_current,
-          rooms ( room_number, floors ( floor_name ) )
-        )
-      `)
-      .ilike("full_name", `%${val}%`)
-      .limit(20);
-
-    const mapped = (data || []).map((p: any) => {
-      const currentAssignment = p.housing_assignments?.find((h: any) => h.is_current);
-      return {
-        id: p.id,
-        full_name: p.full_name,
-        group_number: p.groups?.group_number,
-        leader_name: p.groups?.leader_name,
-        room_number: currentAssignment?.rooms?.room_number,
-        floor_name: currentAssignment?.rooms?.floors?.floor_name,
-      };
-    });
-
-    setResults(mapped);
+    const { data } = await supabase.rpc("search_pilgrims", { query: val });
+    setResults(data || []);
     setSearched(true);
     setLoading(false);
-  }
+  }, []);
 
   return (
     <div>
@@ -72,7 +45,7 @@ export default function SearchPage() {
         <input
           type="text"
           value={query}
-          onChange={handleSearch}
+          onChange={e => handleSearch(e.target.value)}
           placeholder="اكتب جزء من اسم الحاج..."
           className="w-full px-4 py-3 border border-slate-200 rounded-xl text-right focus:outline-none focus:ring-2 focus:ring-emerald-400 text-slate-800 placeholder-slate-400 text-lg"
           autoFocus
@@ -91,32 +64,26 @@ export default function SearchPage() {
         )}
         {!loading && results.map((p) => (
           <div key={p.id} className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
-            <h3 className="font-bold text-slate-900 text-lg text-right mb-3">
-              {p.full_name}
-            </h3>
+            <h3 className="font-bold text-slate-900 text-lg text-right mb-3">{p.full_name}</h3>
             <div className="flex flex-wrap gap-2 justify-end">
               {p.leader_name && (
                 <span className="flex items-center gap-1.5 bg-emerald-50 text-emerald-700 px-3 py-1.5 rounded-full text-sm">
-                  <Users className="w-4 h-4" />
-                  {p.leader_name}
+                  <Users className="w-4 h-4" />{p.leader_name}
                 </span>
               )}
               {p.group_number && (
                 <span className="flex items-center gap-1.5 bg-amber-50 text-amber-700 px-3 py-1.5 rounded-full text-sm">
-                  <Users className="w-4 h-4" />
-                  مجموعة {p.group_number}
+                  <Users className="w-4 h-4" />مجموعة {p.group_number}
                 </span>
               )}
               {p.room_number && (
                 <span className="flex items-center gap-1.5 bg-blue-50 text-blue-700 px-3 py-1.5 rounded-full text-sm">
-                  <Building2 className="w-4 h-4" />
-                  غرفة {p.room_number}
+                  <Building2 className="w-4 h-4" />غرفة {p.room_number}
                 </span>
               )}
               {p.floor_name && (
                 <span className="flex items-center gap-1.5 bg-purple-50 text-purple-700 px-3 py-1.5 rounded-full text-sm">
-                  <Home className="w-4 h-4" />
-                  {p.floor_name}
+                  <Home className="w-4 h-4" />{p.floor_name}
                 </span>
               )}
             </div>
