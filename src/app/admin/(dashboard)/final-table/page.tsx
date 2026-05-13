@@ -1,76 +1,69 @@
 "use client";
 
-import { useState } from "react";
-import { TableProperties, Plus, Download } from "lucide-react";
+import { useState, useEffect } from "react";
+import { createClient } from "@/lib/supabase/client";
+import { TableProperties, Plus, Download, Trash2 } from "lucide-react";
 
 type Campaign = {
   id: number;
   name: string;
-  malePilgrims: number;
-  femalePilgrims: number;
-  maleAdmins: number;
-  femaleAdmins: number;
+  male_pilgrims: number;
+  female_pilgrims: number;
+  male_admins: number;
+  female_admins: number;
 };
 
-const initialCampaigns: Campaign[] = [];
-
 export default function FinalTablePage() {
-  const [campaigns, setCampaigns] = useState<Campaign[]>(initialCampaigns);
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({
-    name: "",
-    malePilgrims: "",
-    femalePilgrims: "",
-    maleAdmins: "",
-    femaleAdmins: "",
-  });
+  const [form, setForm] = useState({ name: "", male_pilgrims: "", female_pilgrims: "", male_admins: "", female_admins: "" });
 
-  const totalPilgrimsMale = campaigns.reduce((s, c) => s + c.malePilgrims, 0);
-  const totalPilgrimsFemale = campaigns.reduce((s, c) => s + c.femalePilgrims, 0);
+  const supabase = createClient();
+
+  async function load() {
+    const { data } = await supabase.from("final_table_campaigns").select("*").order("id");
+    setCampaigns(data || []);
+  }
+
+  useEffect(() => { load(); }, []);
+
+  async function handleAdd() {
+    if (!form.name) return;
+    await supabase.from("final_table_campaigns").insert({
+      name: form.name,
+      male_pilgrims: Number(form.male_pilgrims) || 0,
+      female_pilgrims: Number(form.female_pilgrims) || 0,
+      male_admins: Number(form.male_admins) || 0,
+      female_admins: Number(form.female_admins) || 0,
+    });
+    setForm({ name: "", male_pilgrims: "", female_pilgrims: "", male_admins: "", female_admins: "" });
+    setShowForm(false);
+    load();
+  }
+
+  async function handleDelete(id: number) {
+    await supabase.from("final_table_campaigns").delete().eq("id", id);
+    load();
+  }
+
+  const totalPilgrimsMale = campaigns.reduce((s, c) => s + c.male_pilgrims, 0);
+  const totalPilgrimsFemale = campaigns.reduce((s, c) => s + c.female_pilgrims, 0);
   const totalPilgrims = totalPilgrimsMale + totalPilgrimsFemale;
-  const totalAdminsMale = campaigns.reduce((s, c) => s + c.maleAdmins, 0);
-  const totalAdminsFemale = campaigns.reduce((s, c) => s + c.femaleAdmins, 0);
+  const totalAdminsMale = campaigns.reduce((s, c) => s + c.male_admins, 0);
+  const totalAdminsFemale = campaigns.reduce((s, c) => s + c.female_admins, 0);
   const totalAdmins = totalAdminsMale + totalAdminsFemale;
   const grandTotal = totalPilgrims + totalAdmins;
-
-  function handleAdd() {
-    if (!form.name) return;
-    setCampaigns([...campaigns, {
-      id: Date.now(),
-      name: form.name,
-      malePilgrims: Number(form.malePilgrims) || 0,
-      femalePilgrims: Number(form.femalePilgrims) || 0,
-      maleAdmins: Number(form.maleAdmins) || 0,
-      femaleAdmins: Number(form.femaleAdmins) || 0,
-    }]);
-    setForm({ name: "", malePilgrims: "", femalePilgrims: "", maleAdmins: "", femaleAdmins: "" });
-    setShowForm(false);
-  }
-
-  function handleDelete(id: number) {
-    setCampaigns(campaigns.filter(c => c.id !== id));
-  }
 
   function exportExcel() {
     const rows = [
       ["الحملة", "حجاج رجال", "حجاج نساء", "مجموع الحجاج", "إداريين رجال", "إداريين نساء", "مجموع الإداريين", "الإجمالي"],
-      ...campaigns.map(c => [
-        c.name,
-        c.malePilgrims,
-        c.femalePilgrims,
-        c.malePilgrims + c.femalePilgrims,
-        c.maleAdmins,
-        c.femaleAdmins,
-        c.maleAdmins + c.femaleAdmins,
-        c.malePilgrims + c.femalePilgrims + c.maleAdmins + c.femaleAdmins,
-      ]),
+      ...campaigns.map(c => [c.name, c.male_pilgrims, c.female_pilgrims, c.male_pilgrims + c.female_pilgrims, c.male_admins, c.female_admins, c.male_admins + c.female_admins, c.male_pilgrims + c.female_pilgrims + c.male_admins + c.female_admins]),
       ["الإجمالي", totalPilgrimsMale, totalPilgrimsFemale, totalPilgrims, totalAdminsMale, totalAdminsFemale, totalAdmins, grandTotal],
     ];
     const csv = rows.map(r => r.join(",")).join("\n");
     const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = url;
+    a.href = URL.createObjectURL(blob);
     a.download = "الجدول_النهائي.csv";
     a.click();
   }
@@ -83,62 +76,24 @@ export default function FinalTablePage() {
           <h1 className="text-2xl font-bold text-slate-900">الجدول النهائي</h1>
         </div>
         <div className="flex gap-2">
-          <button
-            onClick={exportExcel}
-            className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition"
-          >
-            <Download className="w-4 h-4" />
-            تصدير Excel ↓
+          <button onClick={exportExcel} className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition">
+            <Download className="w-4 h-4" />تصدير Excel ↓
           </button>
-          <button
-            onClick={() => setShowForm(true)}
-            className="flex items-center gap-2 border border-slate-200 hover:bg-slate-50 text-slate-700 px-4 py-2 rounded-lg text-sm font-medium transition"
-          >
-            <Plus className="w-4 h-4" />
-            إضافة حملة
+          <button onClick={() => setShowForm(true)} className="flex items-center gap-2 border border-slate-200 hover:bg-slate-50 text-slate-700 px-4 py-2 rounded-lg text-sm font-medium transition">
+            <Plus className="w-4 h-4" />إضافة حملة
           </button>
         </div>
       </header>
 
-      {/* Add Form */}
       {showForm && (
         <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 mb-6">
           <h2 className="font-bold text-slate-900 mb-4 text-right">إضافة حملة جديدة</h2>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            <input
-              placeholder="اسم الحملة"
-              value={form.name}
-              onChange={e => setForm({ ...form, name: e.target.value })}
-              className="col-span-2 md:col-span-3 border border-slate-200 rounded-lg px-3 py-2 text-right text-sm"
-            />
-            <input
-              placeholder="حجاج رجال"
-              type="number"
-              value={form.malePilgrims}
-              onChange={e => setForm({ ...form, malePilgrims: e.target.value })}
-              className="border border-slate-200 rounded-lg px-3 py-2 text-right text-sm"
-            />
-            <input
-              placeholder="حجاج نساء"
-              type="number"
-              value={form.femalePilgrims}
-              onChange={e => setForm({ ...form, femalePilgrims: e.target.value })}
-              className="border border-slate-200 rounded-lg px-3 py-2 text-right text-sm"
-            />
-            <input
-              placeholder="إداريين رجال"
-              type="number"
-              value={form.maleAdmins}
-              onChange={e => setForm({ ...form, maleAdmins: e.target.value })}
-              className="border border-slate-200 rounded-lg px-3 py-2 text-right text-sm"
-            />
-            <input
-              placeholder="إداريين نساء"
-              type="number"
-              value={form.femaleAdmins}
-              onChange={e => setForm({ ...form, femaleAdmins: e.target.value })}
-              className="border border-slate-200 rounded-lg px-3 py-2 text-right text-sm"
-            />
+            <input placeholder="اسم الحملة" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} className="col-span-2 md:col-span-3 border border-slate-200 rounded-lg px-3 py-2 text-right text-sm" />
+            <input placeholder="حجاج رجال" type="number" value={form.male_pilgrims} onChange={e => setForm({ ...form, male_pilgrims: e.target.value })} className="border border-slate-200 rounded-lg px-3 py-2 text-right text-sm" />
+            <input placeholder="حجاج نساء" type="number" value={form.female_pilgrims} onChange={e => setForm({ ...form, female_pilgrims: e.target.value })} className="border border-slate-200 rounded-lg px-3 py-2 text-right text-sm" />
+            <input placeholder="إداريين رجال" type="number" value={form.male_admins} onChange={e => setForm({ ...form, male_admins: e.target.value })} className="border border-slate-200 rounded-lg px-3 py-2 text-right text-sm" />
+            <input placeholder="إداريين نساء" type="number" value={form.female_admins} onChange={e => setForm({ ...form, female_admins: e.target.value })} className="border border-slate-200 rounded-lg px-3 py-2 text-right text-sm" />
           </div>
           <div className="flex gap-2 mt-4 justify-end">
             <button onClick={() => setShowForm(false)} className="px-4 py-2 text-sm text-slate-600 hover:bg-slate-50 rounded-lg border border-slate-200">إلغاء</button>
@@ -147,13 +102,12 @@ export default function FinalTablePage() {
         </div>
       )}
 
-      {/* Main Table */}
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden mb-6">
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-right">
             <thead className="bg-slate-50 border-b border-slate-100">
               <tr>
-                <th className="px-4 py-3 font-semibold text-slate-700 w-8"></th>
+                <th className="px-4 py-3 w-8"></th>
                 <th className="px-4 py-3 font-semibold text-slate-700">الحملة</th>
                 <th className="px-4 py-3 font-semibold text-slate-700">حجاج رجال</th>
                 <th className="px-4 py-3 font-semibold text-slate-700">حجاج نساء</th>
@@ -165,29 +119,22 @@ export default function FinalTablePage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
-              {campaigns.length === 0 && (
-                <tr>
-                  <td colSpan={9} className="px-4 py-8 text-center text-slate-400">لا توجد حملات — اضغط "إضافة حملة"</td>
-                </tr>
-              )}
               {campaigns.map((c) => {
-                const totalP = c.malePilgrims + c.femalePilgrims;
-                const totalA = c.maleAdmins + c.femaleAdmins;
+                const totalP = c.male_pilgrims + c.female_pilgrims;
+                const totalA = c.male_admins + c.female_admins;
                 return (
                   <tr key={c.id} className="hover:bg-slate-50 transition">
                     <td className="px-4 py-3">
-                      <button onClick={() => handleDelete(c.id)} className="text-slate-300 hover:text-red-400 transition text-lg">🗑</button>
+                      <button onClick={() => handleDelete(c.id)} className="text-slate-300 hover:text-red-400 transition">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     </td>
                     <td className="px-4 py-3 font-medium text-slate-800">{c.name}</td>
-                    <td className="px-4 py-3 text-slate-600">{c.malePilgrims}</td>
-                    <td className="px-4 py-3 text-slate-600">{c.femalePilgrims}</td>
+                    <td className="px-4 py-3 text-slate-600">{c.male_pilgrims}</td>
+                    <td className="px-4 py-3 text-slate-600">{c.female_pilgrims}</td>
                     <td className="px-4 py-3 font-bold text-emerald-700">{totalP}</td>
-                    <td className="px-4 py-3">
-                      <span className="bg-slate-100 text-slate-700 px-2 py-1 rounded text-xs">{c.maleAdmins}</span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className="bg-slate-100 text-slate-700 px-2 py-1 rounded text-xs">{c.femaleAdmins}</span>
-                    </td>
+                    <td className="px-4 py-3"><span className="bg-slate-100 text-slate-700 px-2 py-1 rounded text-xs">{c.male_admins}</span></td>
+                    <td className="px-4 py-3"><span className="bg-slate-100 text-slate-700 px-2 py-1 rounded text-xs">{c.female_admins}</span></td>
                     <td className="px-4 py-3 text-slate-600">{totalA}</td>
                     <td className="px-4 py-3 font-bold text-amber-600">{totalP + totalA}</td>
                   </tr>
@@ -198,12 +145,12 @@ export default function FinalTablePage() {
               <tr>
                 <td></td>
                 <td className="px-4 py-3 font-bold text-slate-900">الإجمالي</td>
-                <td className="px-4 py-3 font-bold text-slate-700">{totalPilgrimsMale}</td>
-                <td className="px-4 py-3 font-bold text-slate-700">{totalPilgrimsFemale}</td>
+                <td className="px-4 py-3 font-bold">{totalPilgrimsMale}</td>
+                <td className="px-4 py-3 font-bold">{totalPilgrimsFemale}</td>
                 <td className="px-4 py-3 font-bold text-emerald-700">{totalPilgrims}</td>
-                <td className="px-4 py-3 font-bold text-slate-700">{totalAdminsMale}</td>
-                <td className="px-4 py-3 font-bold text-slate-700">{totalAdminsFemale}</td>
-                <td className="px-4 py-3 font-bold text-slate-700">{totalAdmins}</td>
+                <td className="px-4 py-3 font-bold">{totalAdminsMale}</td>
+                <td className="px-4 py-3 font-bold">{totalAdminsFemale}</td>
+                <td className="px-4 py-3 font-bold">{totalAdmins}</td>
                 <td className="px-4 py-3 font-bold text-amber-600">{grandTotal}</td>
               </tr>
             </tfoot>
@@ -211,7 +158,6 @@ export default function FinalTablePage() {
         </div>
       </div>
 
-      {/* Summary */}
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
         <div className="p-4 border-b border-slate-100 flex items-center gap-2">
           <span>✅</span>
