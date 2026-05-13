@@ -13,6 +13,7 @@ import {
   X,
   Plane,
   Search,
+  TableProperties,
 } from "lucide-react";
 import clsx from "clsx";
 
@@ -23,6 +24,7 @@ const links = [
   { href: "/admin/groups", label: "المجموعات", icon: UserCog },
   { href: "/admin/programs", label: "البرامج", icon: Plane },
   { href: "/admin/search", label: "البحث التفصيلي", icon: Search },
+  { href: "/admin/final-table", label: "الجدول النهائي", icon: TableProperties },
   { href: "/admin/print", label: "كشوف الطباعة", icon: Printer },
 ];
 
@@ -64,7 +66,7 @@ export default function AdminSidebar() {
               </div>
             </div>
           </div>
-          <nav className="flex-1 p-4 space-y-1">
+          <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
             {links.map((link) => {
               const Icon = link.icon;
               const isActive =
