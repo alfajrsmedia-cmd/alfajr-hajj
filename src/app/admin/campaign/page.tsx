@@ -65,8 +65,8 @@ export default function CampaignPage() {
   return (
     <div className="flex min-h-screen bg-slate-50" dir="rtl">
       <AdminSidebar />
-      <main className="flex-1 md:mr-64 p-6">
-        <div className="mb-6">
+<main className="flex-1 w-0 md:mr-64 p-6">
+  <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-800 mb-1">قسم الحملة</h1>
           <p className="text-gray-500 text-sm">إجمالي الحجاج: {pilgrims.length}</p>
         </div>
