@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@supabase/supabase-js'
+import { Printer } from 'lucide-react'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -26,6 +27,7 @@ export default function BusesPage() {
   const [activeBus, setActiveBus] = useState(0)
   const [activeCampaign, setActiveCampaign] = useState('الكل')
   const [loading, setLoading] = useState(true)
+  const printRef = useRef<HTMLDivElement>(null)
 
   const campaigns = ['الكل', 'الفجر', 'المسعى', 'المصطفى']
   const buses = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
@@ -63,11 +65,90 @@ export default function BusesPage() {
     setFiltered(result)
   }, [activeBus, activeCampaign, search, rows])
 
+  function handlePrint() {
+    const busLabel = activeBus !== 0 ? `باص ${activeBus}` : 'كل الباصات'
+    const campaignLabel = activeCampaign !== 'الكل' ? ` — ${activeCampaign}` : ''
+    const printWindow = window.open('', '_blank')
+    if (!printWindow) return
+
+    const tableRows = filtered.map((r, i) => `
+      <tr>
+        <td>${i + 1}</td>
+        <td>باص ${r.bus_number}</td>
+        <td>${r.campaign}</td>
+        <td>${r.full_name}</td>
+        <td>${r.passport_number}</td>
+        <td>${r.national_id}</td>
+        <td>${r.ref_number}</td>
+        <td>${r.group_number}</td>
+      </tr>
+    `).join('')
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html dir="rtl" lang="ar">
+      <head>
+        <meta charset="UTF-8">
+        <title>كشف ركاب ${busLabel}${campaignLabel}</title>
+        <style>
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { font-family: 'Arial', sans-serif; font-size: 12px; color: #000; direction: rtl; }
+          .header { text-align: center; padding: 20px; border-bottom: 2px solid #000; margin-bottom: 16px; }
+          .header h1 { font-size: 20px; font-weight: bold; margin-bottom: 6px; }
+          .header p { font-size: 13px; color: #555; }
+          table { width: 100%; border-collapse: collapse; }
+          th { background: #1a7a4a; color: white; padding: 8px 6px; font-size: 11px; text-align: right; border: 1px solid #ccc; }
+          td { padding: 6px; border: 1px solid #ddd; font-size: 11px; text-align: right; }
+          tr:nth-child(even) td { background: #f5f5f5; }
+          .footer { margin-top: 20px; text-align: center; font-size: 11px; color: #888; }
+          @media print {
+            body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>🚌 كشف ركاب ${busLabel}${campaignLabel}</h1>
+          <p>إجمالي الركاب: ${filtered.length} حاج</p>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>الباص</th>
+              <th>الحملة</th>
+              <th>الاسم</th>
+              <th>رقم الجواز</th>
+              <th>رقم الهوية</th>
+              <th>المرجع</th>
+              <th>المجموعة</th>
+            </tr>
+          </thead>
+          <tbody>${tableRows}</tbody>
+        </table>
+        <div class="footer">تم الطباعة في ${new Date().toLocaleDateString('ar-SA')}</div>
+        <script>window.onload = () => { window.print(); window.close(); }</script>
+      </body>
+      </html>
+    `)
+    printWindow.document.close()
+  }
+
   return (
     <div className="p-6" dir="rtl">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-800 mb-1">توزيع الباصات بأسماء الحملة</h1>
-        <p className="text-gray-500 text-sm">إجمالي: {rows.length} حاج — {filtered.length} ظاهر</p>
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-800 mb-1">توزيع الباصات بأسماء الحملة</h1>
+          <p className="text-gray-500 text-sm">إجمالي: {rows.length} حاج — {filtered.length} ظاهر</p>
+        </div>
+        <button
+          onClick={handlePrint}
+          disabled={filtered.length === 0}
+          className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-xl font-semibold hover:bg-emerald-700 transition disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          <Printer className="w-4 h-4" />
+          طباعة {activeBus !== 0 ? `باص ${activeBus}` : 'الكل'}
+        </button>
       </div>
 
       {/* فلتر الحملة */}
