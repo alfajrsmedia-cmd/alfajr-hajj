@@ -63,7 +63,7 @@ export default function CampaignPage() {
   }, [activeCampaign, search, pilgrims])
 
   return (
-    <div className="flex min-h-screen bg-slate-50" dir="rtl">
+   <div className="flex min-h-screen bg-slate-50 w-full overflow-hidden" dir="rtl">
       <AdminSidebar />
 <main className="flex-1 w-0 md:mr-64 p-6">
   <div className="mb-6">
