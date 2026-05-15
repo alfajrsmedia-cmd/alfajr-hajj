@@ -3,6 +3,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import PilgrimQR from "@/components/PilgrimQR";
 import PilgrimMessages from "@/components/PilgrimMessages";
+import PrintButton from "@/components/PrintButton";
 
 export default async function PilgrimPage({
   params,
@@ -72,12 +73,7 @@ export default async function PilgrimPage({
             ← بحث آخر
           </Link>
           <h1 className="font-bold text-sm">حملة الفجر للحج والعمرة</h1>
-          <button
-            onClick={() => { if (typeof window !== "undefined") window.print(); }}
-            className="text-sm hover:opacity-80"
-          >
-            🖨️ طباعة
-          </button>
+          <PrintButton />
         </div>
       </header>
 
