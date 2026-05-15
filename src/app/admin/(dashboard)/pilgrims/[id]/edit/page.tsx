@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowRight, Save, AlertCircle } from "lucide-react";
+import { ArrowRight, Save, AlertCircle, Upload, FileImage } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 export default function PilgrimEditPage() {
@@ -15,6 +15,8 @@ export default function PilgrimEditPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [uploadingPassport, setUploadingPassport] = useState(false);
+  const [uploadingPermit, setUploadingPermit] = useState(false);
 
   useEffect(() => { loadPilgrim() }, [id]);
 
@@ -58,6 +60,29 @@ export default function PilgrimEditPage() {
       setTimeout(() => router.push(`/admin/pilgrims/${id}`), 1000);
     }
     setSaving(false);
+  }
+
+  async function handleUpload(file: File, field: 'passport_photo_path' | 'permit_photo_path') {
+    const supabase = createClient();
+    const setter = field === 'passport_photo_path' ? setUploadingPassport : setUploadingPermit;
+    setter(true);
+    const ext = file.name.split('.').pop();
+    const path = `${id}/${field === 'passport_photo_path' ? 'passport' : 'permit'}_${Date.now()}.${ext}`;
+    const { error: upErr } = await supabase.storage.from('pilgrim-docs').upload(path, file, { upsert: true });
+    if (upErr) {
+      setMessage({ type: 'error', text: 'فشل الرفع: ' + upErr.message });
+      setter(false);
+      return;
+    }
+    const { error: dbErr } = await supabase.from('pilgrims').update({ [field]: path }).eq('id', id);
+    if (dbErr) {
+      setMessage({ type: 'error', text: 'فشل الحفظ: ' + dbErr.message });
+    } else {
+      setPilgrim({ ...pilgrim, [field]: path });
+      setMessage({ type: 'success', text: 'تم رفع الصورة بنجاح ✓' });
+      setTimeout(() => setMessage(null), 3000);
+    }
+    setter(false);
   }
 
   if (loading) return <div className="text-center py-12 text-slate-400">جاري التحميل...</div>;
@@ -133,6 +158,27 @@ export default function PilgrimEditPage() {
           </div>
         </div>
 
+        {/* رفع الوثائق */}
+        <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-6">
+          <h2 className="font-bold text-slate-900 mb-4">الوثائق والصور</h2>
+          <div className="grid md:grid-cols-2 gap-6">
+            <UploadBox
+              label="صورة جواز السفر"
+              currentPath={pilgrim.passport_photo_path}
+              uploading={uploadingPassport}
+              supabaseUrl={process.env.NEXT_PUBLIC_SUPABASE_URL!}
+              onFile={f => handleUpload(f, 'passport_photo_path')}
+            />
+            <UploadBox
+              label="تصريح الحج"
+              currentPath={pilgrim.permit_photo_path}
+              uploading={uploadingPermit}
+              supabaseUrl={process.env.NEXT_PUBLIC_SUPABASE_URL!}
+              onFile={f => handleUpload(f, 'permit_photo_path')}
+            />
+          </div>
+        </div>
+
         <div className="flex justify-end">
           <button type="submit" disabled={saving} className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 text-white px-6 py-2.5 rounded-lg font-medium transition">
             <Save className="w-4 h-4" />
@@ -149,6 +195,56 @@ function Field({ label, value, onChange, type = "text", required = false }: { la
     <div>
       <label className="block text-sm font-medium text-slate-700 mb-1">{label} {required && <span className="text-red-500">*</span>}</label>
       <input type={type} value={value} onChange={e => onChange(e.target.value)} required={required} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none text-sm" />
+    </div>
+  );
+}
+
+function UploadBox({ label, currentPath, uploading, supabaseUrl, onFile }: {
+  label: string;
+  currentPath: string | null;
+  uploading: boolean;
+  supabaseUrl: string;
+  onFile: (f: File) => void;
+}) {
+  const url = currentPath ? `${supabaseUrl}/storage/v1/object/public/pilgrim-docs/${currentPath}` : null;
+  const isPdf = currentPath?.toLowerCase().endsWith('.pdf');
+
+  return (
+    <div className="space-y-3">
+      <label className="block text-sm font-medium text-slate-700">{label}</label>
+
+      {url && (
+        <div className="relative rounded-lg overflow-hidden border border-slate-200 bg-slate-50">
+          {isPdf ? (
+            <div className="flex items-center justify-center h-40">
+              <a href={url} target="_blank" rel="noreferrer" className="text-emerald-600 text-sm hover:underline">عرض ملف PDF</a>
+            </div>
+          ) : (
+            <a href={url} target="_blank" rel="noreferrer">
+              <img src={url} alt={label} className="w-full h-40 object-contain hover:opacity-80 transition" />
+            </a>
+          )}
+        </div>
+      )}
+
+      <label className={`flex items-center justify-center gap-2 w-full py-3 border-2 border-dashed rounded-lg cursor-pointer transition ${uploading ? 'opacity-50 cursor-not-allowed border-slate-200' : 'border-emerald-300 hover:border-emerald-500 hover:bg-emerald-50'}`}>
+        <input
+          type="file"
+          accept="image/*,application/pdf"
+          className="hidden"
+          disabled={uploading}
+          onChange={e => { if (e.target.files?.[0]) onFile(e.target.files[0]); }}
+        />
+        {uploading ? (
+          <span className="text-sm text-slate-400">جاري الرفع...</span>
+        ) : (
+          <>
+            <Upload className="w-4 h-4 text-emerald-600" />
+            <span className="text-sm text-emerald-700">{currentPath ? 'تغيير الصورة' : 'رفع صورة'}</span>
+          </>
+        )}
+      </label>
+      <p className="text-xs text-slate-400">JPG، PNG، WEBP، PDF — حد أقصى 10MB</p>
     </div>
   );
 }

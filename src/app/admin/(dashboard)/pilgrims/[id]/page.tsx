@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowRight, User, Home, Users, Bus, ShoppingCart, AlertCircle } from "lucide-react";
+import { ArrowRight, User, Home, Users, Bus, ShoppingCart, AlertCircle, FileImage } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 export default function PilgrimProfilePage() {
@@ -92,6 +92,22 @@ export default function PilgrimProfilePage() {
           تعديل
         </Link>
       </div>
+
+      {/* صور الوثائق */}
+      {(pilgrim.passport_photo_path || pilgrim.permit_photo_path) && (
+        <div className="grid md:grid-cols-2 gap-5 mb-5">
+          <DocPhoto
+            label="صورة جواز السفر"
+            path={pilgrim.passport_photo_path}
+            supabaseUrl={process.env.NEXT_PUBLIC_SUPABASE_URL!}
+          />
+          <DocPhoto
+            label="تصريح الحج"
+            path={pilgrim.permit_photo_path}
+            supabaseUrl={process.env.NEXT_PUBLIC_SUPABASE_URL!}
+          />
+        </div>
+      )}
 
       <div className="grid md:grid-cols-2 gap-5">
 
@@ -213,4 +229,40 @@ function Badge({ children, color }: { children: React.ReactNode; color: string }
 
 function Empty({ text }: { text: string }) {
   return <p className="text-xs text-slate-400 py-3 text-center">{text}</p>;
+}
+
+function DocPhoto({ label, path, supabaseUrl }: { label: string; path: string | null; supabaseUrl: string }) {
+  if (!path) return (
+    <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className="flex items-center gap-2 px-5 py-3 border-b border-slate-100 bg-slate-50">
+        <FileImage className="w-4 h-4 text-slate-400" />
+        <h2 className="font-semibold text-slate-700 text-sm">{label}</h2>
+      </div>
+      <div className="flex items-center justify-center h-48 text-slate-300 text-sm">لا توجد صورة</div>
+    </div>
+  );
+
+  const isPdf = path.toLowerCase().endsWith('.pdf');
+  const url = `${supabaseUrl}/storage/v1/object/public/pilgrim-docs/${path}`;
+
+  return (
+    <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100 bg-slate-50">
+        <div className="flex items-center gap-2">
+          <FileImage className="w-4 h-4 text-emerald-600" />
+          <h2 className="font-semibold text-slate-700 text-sm">{label}</h2>
+        </div>
+        <a href={url} target="_blank" rel="noreferrer" className="text-xs text-emerald-600 hover:underline">فتح</a>
+      </div>
+      {isPdf ? (
+        <div className="flex items-center justify-center h-48 bg-slate-50">
+          <a href={url} target="_blank" rel="noreferrer" className="text-emerald-600 text-sm hover:underline">عرض ملف PDF</a>
+        </div>
+      ) : (
+        <a href={url} target="_blank" rel="noreferrer">
+          <img src={url} alt={label} className="w-full h-64 object-contain bg-slate-50 hover:opacity-90 transition" />
+        </a>
+      )}
+    </div>
+  );
 }
