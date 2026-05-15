@@ -62,6 +62,23 @@ export default function PilgrimEditPage() {
     setSaving(false);
   }
 
+  async function handleDelete(field: 'passport_photo_path' | 'permit_photo_path') {
+    if (!confirm('هل أنت متأكد من حذف الصورة؟')) return;
+    const supabase = createClient();
+    const currentPath = pilgrim[field];
+    if (currentPath) {
+      await supabase.storage.from('pilgrim-docs').remove([currentPath]);
+    }
+    const { error } = await supabase.from('pilgrims').update({ [field]: null }).eq('id', id);
+    if (error) {
+      setMessage({ type: 'error', text: 'فشل الحذف: ' + error.message });
+    } else {
+      setPilgrim({ ...pilgrim, [field]: null });
+      setMessage({ type: 'success', text: 'تم حذف الصورة ✓' });
+      setTimeout(() => setMessage(null), 3000);
+    }
+  }
+
   async function handleUpload(file: File, field: 'passport_photo_path' | 'permit_photo_path') {
     const supabase = createClient();
     const setter = field === 'passport_photo_path' ? setUploadingPassport : setUploadingPermit;
@@ -168,6 +185,7 @@ export default function PilgrimEditPage() {
               uploading={uploadingPassport}
               supabaseUrl={process.env.NEXT_PUBLIC_SUPABASE_URL!}
               onFile={f => handleUpload(f, 'passport_photo_path')}
+              onDelete={() => handleDelete('passport_photo_path')}
             />
             <UploadBox
               label="تصريح الحج"
@@ -175,6 +193,7 @@ export default function PilgrimEditPage() {
               uploading={uploadingPermit}
               supabaseUrl={process.env.NEXT_PUBLIC_SUPABASE_URL!}
               onFile={f => handleUpload(f, 'permit_photo_path')}
+              onDelete={() => handleDelete('permit_photo_path')}
             />
           </div>
         </div>
@@ -199,12 +218,13 @@ function Field({ label, value, onChange, type = "text", required = false }: { la
   );
 }
 
-function UploadBox({ label, currentPath, uploading, supabaseUrl, onFile }: {
+function UploadBox({ label, currentPath, uploading, supabaseUrl, onFile, onDelete }: {
   label: string;
   currentPath: string | null;
   uploading: boolean;
   supabaseUrl: string;
   onFile: (f: File) => void;
+  onDelete: () => void;
 }) {
   const url = currentPath ? `${supabaseUrl}/storage/v1/object/public/pilgrim-docs/${currentPath}` : null;
   const isPdf = currentPath?.toLowerCase().endsWith('.pdf');
@@ -224,6 +244,13 @@ function UploadBox({ label, currentPath, uploading, supabaseUrl, onFile }: {
               <img src={url} alt={label} className="w-full h-40 object-contain hover:opacity-80 transition" />
             </a>
           )}
+          <button
+            type="button"
+            onClick={onDelete}
+            className="absolute top-2 left-2 bg-red-500 hover:bg-red-600 text-white text-xs px-2 py-1 rounded-md shadow transition"
+          >
+            حذف
+          </button>
         </div>
       )}
 
