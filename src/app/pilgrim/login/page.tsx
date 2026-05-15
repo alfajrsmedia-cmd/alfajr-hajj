@@ -20,6 +20,12 @@ export default function PilgrimLogin() {
     setResults([]);
     const supabase = createClient();
 
+    // Normalize phone: 971XXXXXXXXX or 00971XXXXXXXXX → 0XXXXXXXXX
+    let normalizedPhone = q;
+    if (/^971\d{9}$/.test(q)) normalizedPhone = "0" + q.slice(3);
+    else if (/^00971\d{9}$/.test(q)) normalizedPhone = "0" + q.slice(5);
+    else if (/^\+971\d{9}$/.test(q)) normalizedPhone = "0" + q.slice(4);
+
     try {
       // 1. Try ref_number (رقم التصريح) from campaign_pilgrims
       if (/^\d+$/.test(q)) {
@@ -42,7 +48,7 @@ export default function PilgrimLogin() {
         const { data: byPhone } = await supabase
           .from("pilgrims")
           .select("id, full_name, groups(group_number)")
-          .eq("phone", q)
+          .eq("phone", normalizedPhone)
           .limit(10);
 
         if (byPhone && byPhone.length === 1) {
@@ -56,7 +62,7 @@ export default function PilgrimLogin() {
         const { data: grps } = await supabase
           .from("groups")
           .select("id")
-          .eq("leader_phone", q);
+          .eq("leader_phone", normalizedPhone);
 
         if (grps && grps.length > 0) {
           const groupIds = grps.map((g: any) => g.id);
