@@ -3,14 +3,6 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
-const PROGRAMS = [
-  'الرحلة الأولى 1447',
-  'الرحلة الثانية 1447',
-  'الالتحاق 1447',
-  'الرحلة الأولى — بزنس',
-  'الرحلة الثانية — بزنس',
-]
-
 const LEVEL_COLORS: Record<string, string> = {
   'المستوى الأول': 'bg-purple-100 text-purple-700 border-purple-200',
   'المستوى الثاني': 'bg-blue-100 text-blue-700 border-blue-200',
@@ -19,7 +11,8 @@ const LEVEL_COLORS: Record<string, string> = {
 }
 
 export default function ProgramsPage() {
-  const [selectedProgram, setSelectedProgram] = useState(PROGRAMS[0])
+  const [programs, setPrograms] = useState<string[]>([])
+  const [selectedProgram, setSelectedProgram] = useState('')
   const [pilgrims, setPilgrims] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -28,15 +21,18 @@ export default function ProgramsPage() {
   const [counts, setCounts] = useState<Record<string, number>>({})
   const supabase = createClient()
 
-  useEffect(() => { loadCounts() }, [])
-  useEffect(() => { loadPilgrims() }, [selectedProgram])
+  useEffect(() => { loadPrograms() }, [])
+  useEffect(() => { if (selectedProgram) loadPilgrims() }, [selectedProgram])
 
-  async function loadCounts() {
+  async function loadPrograms() {
     const { data } = await supabase.from('pilgrims').select('program')
     if (data) {
       const c: Record<string, number> = {}
-      data.forEach((p: any) => { c[p.program] = (c[p.program] || 0) + 1 })
+      data.forEach((p: any) => { if (p.program) c[p.program] = (c[p.program] || 0) + 1 })
       setCounts(c)
+      const list = Object.keys(c).sort()
+      setPrograms(list)
+      if (list.length > 0) setSelectedProgram(list[0])
     }
   }
 
@@ -113,7 +109,7 @@ export default function ProgramsPage() {
 
       {/* Program tabs */}
       <div className="flex gap-2 flex-wrap mb-5">
-        {PROGRAMS.map(p => (
+        {programs.map(p => (
           <button key={p} onClick={() => setSelectedProgram(p)}
             className={`px-4 py-2 rounded-full text-sm font-medium transition border flex items-center gap-2 ${
               selectedProgram === p

@@ -59,6 +59,13 @@ export type Pilgrim = {
   auth_method: string;
   auth_identifier: string | null;
   status: "active" | "inactive" | "cancelled";
+  program: string | null;
+  room_type: string | null;
+  level: string | null;
+  travel_from: string | null;
+  travel_to: string | null;
+  search_name: string | null;
+  permit_number: number | null;
 };
 
 export type HousingAssignment = {
