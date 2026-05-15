@@ -17,6 +17,7 @@ import {
   Flag,
   Bus,
   ClipboardList,
+  MessageSquare,
 } from "lucide-react";
 import clsx from "clsx";
 
@@ -31,6 +32,7 @@ const links = [
   { href: "/admin/bus-list", label: "قائمة الباصات", icon: Bus },
   { href: "/admin/quantities", label: "جدول الكميات", icon: ClipboardList },
   { href: "/admin/golf-carts", label: "عربات القولف", icon: ClipboardList },
+  { href: "/admin/messages", label: "رسائل الحجاج", icon: MessageSquare },
   { href: "/admin/search", label: "البحث التفصيلي", icon: Search },
   { href: "/admin/final-table", label: "الجدول النهائي", icon: TableProperties },
   { href: "/admin/print", label: "كشوف الطباعة", icon: Printer },
