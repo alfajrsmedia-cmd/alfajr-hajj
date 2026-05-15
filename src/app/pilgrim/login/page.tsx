@@ -20,45 +20,35 @@ export default function PilgrimLogin() {
     setResults([]);
     const supabase = createClient();
 
-    // Normalize phone: 971XXXXXXXXX or 00971XXXXXXXXX → 0XXXXXXXXX
+    // Normalize phone: 971XXXXXXXXX / 00971XXXXXXXXX / +971XXXXXXXXX → 0XXXXXXXXX
     let normalizedPhone = q;
-    if (/^971\d{9}$/.test(q)) normalizedPhone = "0" + q.slice(3);
+    if (/^971\d{9}$/.test(q))   normalizedPhone = "0" + q.slice(3);
     else if (/^00971\d{9}$/.test(q)) normalizedPhone = "0" + q.slice(5);
     else if (/^\+971\d{9}$/.test(q)) normalizedPhone = "0" + q.slice(4);
 
     try {
-      // 1. Try ref_number (رقم التصريح) from campaign_pilgrims
       if (/^\d+$/.test(q)) {
-        const { data: cp } = await supabase
-          .from("campaign_pilgrims")
-          .select("passport_number")
-          .eq("ref_number", parseInt(q))
-          .limit(1);
+        // 1. رقم التصريح — مباشرة من pilgrims.permit_number
+        const { data: byPermit } = await supabase
+          .from("pilgrims")
+          .select("id, full_name, groups(group_number)")
+          .eq("permit_number", parseInt(q))
+          .limit(5);
 
-        if (cp && cp.length > 0) {
-          const { data: p } = await supabase
-            .from("pilgrims")
-            .select("id, full_name, groups(group_number)")
-            .eq("passport_number", cp[0].passport_number)
-            .single();
-          if (p) { router.push(`/pilgrim/${p.id}`); return; }
-        }
+        if (byPermit && byPermit.length === 1) { router.push(`/pilgrim/${byPermit[0].id}`); return; }
+        if (byPermit && byPermit.length > 1)   { setResults(byPermit); return; }
 
-        // 2. Try phone in pilgrims
+        // 2. رقم الجوال — من pilgrims.phone
         const { data: byPhone } = await supabase
           .from("pilgrims")
           .select("id, full_name, groups(group_number)")
           .eq("phone", normalizedPhone)
           .limit(10);
 
-        if (byPhone && byPhone.length === 1) {
-          router.push(`/pilgrim/${byPhone[0].id}`); return;
-        }
-        if (byPhone && byPhone.length > 1) {
-          setResults(byPhone); return;
-        }
+        if (byPhone && byPhone.length === 1) { router.push(`/pilgrim/${byPhone[0].id}`); return; }
+        if (byPhone && byPhone.length > 1)   { setResults(byPhone); return; }
 
-        // 3. Try leader_phone in groups
+        // 3. رقم جوال مسؤول المجموعة — من groups.leader_phone
         const { data: grps } = await supabase
           .from("groups")
           .select("id")
@@ -72,7 +62,7 @@ export default function PilgrimLogin() {
             .in("group_id", groupIds)
             .order("full_name");
           if (gp && gp.length === 1) { router.push(`/pilgrim/${gp[0].id}`); return; }
-          if (gp && gp.length > 1) { setResults(gp); return; }
+          if (gp && gp.length > 1)   { setResults(gp); return; }
         }
       }
 
