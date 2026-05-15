@@ -25,7 +25,7 @@ export default function PilgrimProfilePage() {
 
     const { data: p } = await supabase
       .from("pilgrims")
-      .select("*, groups(group_number, group_name, leader_name, leader_phone)")
+      .select("*, groups(group_number, group_name, leader_name, leader_phone), campaigns(name, hijri_year, year)")
       .eq("id", pilgrimId)
       .single();
 
@@ -77,6 +77,7 @@ export default function PilgrimProfilePage() {
         <div className="flex-1 min-w-0">
           <h1 className="text-2xl font-bold text-slate-900">{pilgrim.full_name}</h1>
           <div className="flex flex-wrap gap-3 mt-2">
+            {pilgrim.campaigns?.name && <Badge color="slate">{pilgrim.campaigns.name}</Badge>}
             {pilgrim.program && <Badge color="emerald">{pilgrim.program}</Badge>}
             {pilgrim.groups?.group_number && <Badge color="amber">مجموعة {pilgrim.groups.group_number}</Badge>}
             {housing?.room_number && <Badge color="blue">غرفة {housing.room_number}</Badge>}
@@ -96,6 +97,8 @@ export default function PilgrimProfilePage() {
 
         {/* البيانات الشخصية */}
         <Section title="البيانات الشخصية" icon={<User className="w-4 h-4" />}>
+          <Row label="الحملة"          value={pilgrim.campaigns?.name} />
+          <Row label="السنة الهجرية"   value={pilgrim.campaigns?.hijri_year} />
           <Row label="الاسم الكامل"    value={pilgrim.full_name} />
           <Row label="رقم الهوية"      value={pilgrim.national_id} />
           <Row label="رقم الجواز"      value={pilgrim.passport_number} mono />
@@ -201,6 +204,7 @@ function Badge({ children, color }: { children: React.ReactNode; color: string }
     blue:    "bg-blue-50 text-blue-700 border-blue-200",
     purple:  "bg-purple-50 text-purple-700 border-purple-200",
     rose:    "bg-rose-50 text-rose-700 border-rose-200",
+    slate:   "bg-slate-100 text-slate-700 border-slate-200",
   };
   return (
     <span className={`text-xs px-2.5 py-1 rounded-full border font-medium ${colors[color]}`}>{children}</span>
