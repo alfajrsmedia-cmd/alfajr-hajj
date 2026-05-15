@@ -3,7 +3,6 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import PilgrimQR from "@/components/PilgrimQR";
 import PilgrimMessages from "@/components/PilgrimMessages";
-import PrintButton from "@/components/PrintButton";
 
 export default async function PilgrimPage({
   params,
@@ -65,155 +64,149 @@ export default async function PilgrimPage({
   const group = pilgrim.groups as any;
 
   return (
-    <div className="min-h-screen bg-slate-50" dir="rtl">
+    <div className="min-h-screen bg-slate-100" dir="rtl">
       {/* Header */}
-      <header className="bg-emerald-700 text-white shadow-md print:hidden">
+      <header className="bg-emerald-700 text-white">
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
-          <Link href="/pilgrim/login" className="text-sm hover:opacity-80 flex items-center gap-1">
+          <Link href="/pilgrim/login" className="text-sm text-emerald-200 hover:text-white flex items-center gap-1 transition">
             ← بحث آخر
           </Link>
-          <h1 className="font-bold text-sm">حملة الفجر للحج والعمرة</h1>
-          <PrintButton />
+          <p className="font-bold text-sm">حملة الفجر للحج والعمرة</p>
+          <div className="w-16" />
         </div>
       </header>
 
-      <main className="max-w-2xl mx-auto px-4 py-6 space-y-4">
+      <main className="max-w-2xl mx-auto px-4 py-5 space-y-4">
 
-        {/* Name Card */}
-        <div className="bg-emerald-700 text-white rounded-2xl p-5 flex items-start justify-between gap-4">
-          <div className="flex-1 min-w-0">
-            {cp?.ref_number && (
-              <p className="text-xs text-emerald-200 mb-1">
-                رقم التصريح: <span className="font-bold">{cp.ref_number}</span>
-              </p>
-            )}
-            <h2 className="text-xl font-black leading-snug">{pilgrim.full_name}</h2>
-            {group?.group_number && (
-              <p className="text-emerald-200 mt-1.5 text-sm">مجموعة رقم: {group.group_number}</p>
-            )}
-            {pilgrim.program && (
-              <p className="text-emerald-100 text-sm mt-0.5">✈️ {pilgrim.program}</p>
-            )}
-          </div>
-          <div className="bg-white p-1.5 rounded-xl shrink-0">
-            <PilgrimQR
-              data={JSON.stringify({
-                id: pilgrimId,
-                name: pilgrim.full_name,
-                ref: cp?.ref_number,
-                group: group?.group_number,
-              })}
-            />
-          </div>
-        </div>
-
-        {/* Housing */}
-        {housing && (
-          <div className="bg-white rounded-2xl p-4 border border-slate-200">
-            <p className="text-xs font-semibold text-slate-500 mb-3">🏨 بيانات السكن</p>
-            <div className="grid grid-cols-3 gap-2 text-center">
-              <div className="bg-slate-50 rounded-xl p-3">
-                <p className="text-xs text-slate-400 mb-1">الفندق</p>
-                <p className="font-bold text-slate-800 text-sm leading-snug">{housing.hotel_name || "—"}</p>
-                {housing.hotel_city && (
-                  <p className="text-xs text-slate-400 mt-0.5">{housing.hotel_city}</p>
-                )}
-              </div>
-              <div className="bg-slate-50 rounded-xl p-3">
-                <p className="text-xs text-slate-400 mb-1">الطابق</p>
-                <p className="font-bold text-slate-800 text-sm">{housing.floor_name || "—"}</p>
-                <p className="text-xs text-slate-400 mt-0.5">رقم {housing.floor_number}</p>
-              </div>
-              <div className="bg-emerald-50 border-2 border-emerald-300 rounded-xl p-3">
-                <p className="text-xs text-emerald-600 mb-1">رقم الغرفة</p>
-                <p className="font-black text-emerald-700 text-3xl leading-none">{housing.room_number || "—"}</p>
-                <p className="text-xs text-slate-400 mt-0.5">سعة {housing.room_capacity}</p>
-              </div>
+        {/* === Name Card === */}
+        <div className="bg-emerald-700 rounded-2xl overflow-hidden shadow-md">
+          <div className="p-5 flex items-start gap-4">
+            <div className="bg-white rounded-xl p-1.5 shrink-0 shadow">
+              <PilgrimQR
+                data={JSON.stringify({
+                  id: pilgrimId,
+                  name: pilgrim.full_name,
+                  ref: cp?.ref_number,
+                  group: group?.group_number,
+                })}
+              />
             </div>
-          </div>
-        )}
-
-        {/* Group Leader */}
-        {group && (
-          <div className="bg-white rounded-2xl p-4 border border-slate-200">
-            <p className="text-xs font-semibold text-slate-500 mb-3">👥 المجموعة والمسؤول</p>
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="font-bold text-slate-800">مجموعة رقم {group.group_number}</p>
-                {group.leader_name && (
-                  <p className="text-sm text-slate-600 mt-0.5">
-                    المسؤول: <span className="font-medium">{group.leader_name}</span>
-                  </p>
-                )}
-              </div>
-              {group.leader_phone && (
-                <a
-                  href={`tel:${group.leader_phone}`}
-                  className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-2.5 rounded-xl font-bold text-sm hover:bg-emerald-100 transition shrink-0"
-                >
-                  📞 {group.leader_phone}
-                </a>
+            <div className="flex-1 min-w-0">
+              {cp?.ref_number && (
+                <p className="text-xs text-emerald-300 mb-1">
+                  رقم التصريح: <span className="font-bold text-emerald-100">{cp.ref_number}</span>
+                </p>
+              )}
+              <h2 className="text-xl font-black text-white leading-tight">{pilgrim.full_name}</h2>
+              {group?.group_number && (
+                <p className="text-emerald-200 text-sm mt-1">مجموعة رقم: {group.group_number}</p>
+              )}
+              {pilgrim.program && (
+                <span className="inline-block mt-2 text-xs bg-emerald-600 text-emerald-100 px-2.5 py-1 rounded-full">
+                  ✈️ {pilgrim.program}
+                </span>
               )}
             </div>
           </div>
-        )}
 
-        {/* Bus + Travel Info */}
-        <div className="grid grid-cols-2 gap-3">
-          {bus?.bus_number && (
-            <div className="bg-white rounded-2xl p-4 border border-slate-200 text-center">
-              <p className="text-xs font-semibold text-slate-500 mb-2">🚌 الحافلة</p>
-              <p className="text-5xl font-black text-slate-800 leading-none">{bus.bus_number}</p>
-              <p className="text-xs text-slate-400 mt-1">رقم الباص</p>
+          {/* Quick stats bar */}
+          <div className="grid grid-cols-4 border-t border-emerald-600 divide-x divide-emerald-600 text-center">
+            <div className="py-3 px-2">
+              <p className="text-emerald-300 text-xs mb-0.5">الغرفة</p>
+              <p className="text-white font-black text-lg leading-none">
+                {housing?.room_number || "—"}
+              </p>
             </div>
-          )}
-
-          {(pilgrim.level || pilgrim.room_type || pilgrim.travel_from || pilgrim.travel_to) && (
-            <div className={`bg-white rounded-2xl p-4 border border-slate-200 ${!bus?.bus_number ? "col-span-2" : ""}`}>
-              <p className="text-xs font-semibold text-slate-500 mb-3">✈️ تفاصيل البرنامج</p>
-              <div className="space-y-2 text-sm">
-                {pilgrim.level && (
-                  <div className="flex justify-between">
-                    <span className="text-slate-500">المستوى</span>
-                    <span className="font-medium text-slate-800">{pilgrim.level}</span>
-                  </div>
-                )}
-                {pilgrim.room_type && (
-                  <div className="flex justify-between">
-                    <span className="text-slate-500">نوع الغرفة</span>
-                    <span className="font-medium text-slate-800">{pilgrim.room_type}</span>
-                  </div>
-                )}
-                {pilgrim.travel_from && (
-                  <div className="flex justify-between">
-                    <span className="text-slate-500">تاريخ السفر</span>
-                    <span className="font-medium text-slate-800">{String(pilgrim.travel_from)}</span>
-                  </div>
-                )}
-                {pilgrim.travel_to && (
-                  <div className="flex justify-between">
-                    <span className="text-slate-500">تاريخ العودة</span>
-                    <span className="font-medium text-slate-800">{String(pilgrim.travel_to)}</span>
-                  </div>
-                )}
-              </div>
+            <div className="py-3 px-2">
+              <p className="text-emerald-300 text-xs mb-0.5">الباص</p>
+              <p className="text-white font-black text-lg leading-none">
+                {bus?.bus_number || "—"}
+              </p>
             </div>
-          )}
-
-          {cp?.booking_type && (
-            <div className="bg-white rounded-2xl p-4 border border-slate-200 text-center col-span-1">
-              <p className="text-xs font-semibold text-slate-500 mb-2">⛺ المخيم</p>
-              <p className="font-black text-slate-800 text-xl">{cp.booking_type}</p>
+            <div className="py-3 px-2">
+              <p className="text-emerald-300 text-xs mb-0.5">المجموعة</p>
+              <p className="text-white font-black text-lg leading-none">
+                {group?.group_number || "—"}
+              </p>
             </div>
-          )}
+            <div className="py-3 px-2">
+              <p className="text-emerald-300 text-xs mb-0.5">الطابق</p>
+              <p className="text-white font-black text-lg leading-none">
+                {housing?.floor_number || "—"}
+              </p>
+            </div>
+          </div>
         </div>
 
-        {/* Roommates */}
-        {roommates.length > 0 && (
-          <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
-            <div className="px-4 py-3 bg-slate-50 border-b border-slate-200">
-              <p className="font-bold text-slate-800 text-sm">🛏️ زملاء الغرفة ({roommates.length})</p>
+        {/* === السكن === */}
+        <Section title="🏨 بيانات السكن">
+          <InfoRow label="الفندق" value={housing?.hotel_name} />
+          <InfoRow label="المدينة" value={housing?.hotel_city} />
+          <InfoRow label="الطابق" value={housing?.floor_name} />
+          <InfoRow label="رقم الغرفة" value={housing?.room_number} highlight />
+          <InfoRow label="سعة الغرفة" value={housing?.room_capacity ? `${housing.room_capacity} أشخاص` : undefined} />
+        </Section>
+
+        {/* === المجموعة === */}
+        <Section title="👥 المجموعة والمسؤول">
+          <InfoRow label="رقم المجموعة" value={group?.group_number} />
+          <InfoRow label="مسؤول المجموعة" value={group?.leader_name} />
+          {group?.leader_phone ? (
+            <div className="flex items-center justify-between py-2.5 border-b border-slate-100 last:border-0">
+              <span className="text-sm text-slate-500">هاتف المسؤول</span>
+              <a href={`tel:${group.leader_phone}`}
+                className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 text-emerald-700 px-3 py-1.5 rounded-lg font-bold text-sm hover:bg-emerald-100 transition">
+                📞 {group.leader_phone}
+              </a>
             </div>
+          ) : (
+            <InfoRow label="هاتف المسؤول" value={undefined} />
+          )}
+        </Section>
+
+        {/* === الحافلة === */}
+        <Section title="🚌 الحافلة">
+          {bus?.bus_number ? (
+            <div className="flex items-center justify-between py-3">
+              <span className="text-sm text-slate-500">رقم الحافلة</span>
+              <span className="text-4xl font-black text-slate-800">{bus.bus_number}</span>
+            </div>
+          ) : (
+            <InfoRow label="رقم الحافلة" value={undefined} />
+          )}
+          <InfoRow label="موعد التحرك" value={undefined} />
+          <InfoRow label="نقطة التجمع" value={undefined} />
+        </Section>
+
+        {/* === البرنامج === */}
+        <Section title="✈️ تفاصيل البرنامج والسفر">
+          <InfoRow label="البرنامج" value={pilgrim.program} />
+          <InfoRow label="المستوى" value={pilgrim.level} />
+          <InfoRow label="نوع الغرفة" value={pilgrim.room_type} />
+          <InfoRow label="تاريخ السفر" value={pilgrim.travel_from ? String(pilgrim.travel_from) : undefined} />
+          <InfoRow label="تاريخ العودة" value={pilgrim.travel_to ? String(pilgrim.travel_to) : undefined} />
+          <InfoRow label="درجة السفر" value={undefined} />
+          <InfoRow label="شركة الطيران" value={undefined} />
+        </Section>
+
+        {/* === المخيمات === */}
+        <Section title="⛺ المخيمات">
+          <InfoRow label="نوع التسكين" value={cp?.booking_type} />
+          <InfoRow label="مخيم منى" value={undefined} />
+          <InfoRow label="مخيم عرفات" value={undefined} />
+          <InfoRow label="مخيم مزدلفة" value={undefined} />
+          <p className="text-xs text-slate-400 pt-2 text-center">سيتم الإعلان عن تفاصيل المخيمات لاحقاً</p>
+        </Section>
+
+        {/* === زملاء الغرفة === */}
+        <div className="bg-white rounded-2xl shadow-sm overflow-hidden border border-slate-200">
+          <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
+            <p className="font-bold text-slate-800 text-sm">🛏️ زملاء الغرفة</p>
+            <span className="text-xs text-slate-400">
+              {roommates.length > 0 ? `${roommates.length} أشخاص` : "لا يوجد بيانات"}
+            </span>
+          </div>
+          {roommates.length > 0 ? (
             <div className="divide-y divide-slate-100">
               {roommates.map((m: any) => (
                 <div key={m.pilgrim_id} className="px-4 py-3 flex items-center justify-between">
@@ -226,47 +219,69 @@ export default async function PilgrimPage({
                 </div>
               ))}
             </div>
-          </div>
-        )}
-
-        {/* Contact */}
-        <div className="bg-white rounded-2xl p-4 border border-slate-200">
-          <p className="text-xs font-semibold text-slate-500 mb-3">📞 أرقام التواصل</p>
-          <div className="space-y-2">
-            <a
-              href="tel:065389222"
-              className="flex items-center justify-between bg-slate-50 rounded-xl px-4 py-3 hover:bg-slate-100 transition"
-            >
-              <span className="text-sm text-slate-700">إدارة الحملة</span>
-              <span className="font-bold text-slate-900">065389222</span>
-            </a>
-            <a
-              href="https://wa.me/97165389222"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center justify-between bg-green-50 border border-green-200 rounded-xl px-4 py-3 hover:bg-green-100 transition"
-            >
-              <span className="text-sm text-green-700 font-medium">واتساب الحملة</span>
-              <span className="text-green-600 font-bold">تواصل الآن ←</span>
-            </a>
-            {pilgrim.emergency_contact_name && pilgrim.emergency_contact_phone && (
-              <a
-                href={`tel:${pilgrim.emergency_contact_phone}`}
-                className="flex items-center justify-between bg-red-50 border border-red-200 rounded-xl px-4 py-3 hover:bg-red-100 transition"
-              >
-                <span className="text-sm text-red-700">
-                  🆘 {pilgrim.emergency_contact_name}
-                </span>
-                <span className="font-bold text-red-800">{pilgrim.emergency_contact_phone}</span>
-              </a>
-            )}
-          </div>
+          ) : (
+            <p className="text-center text-sm text-slate-400 py-6">لم يُحدَّد زملاء الغرفة بعد</p>
+          )}
         </div>
 
-        {/* Messages */}
+        {/* === التواصل === */}
+        <Section title="📞 أرقام التواصل والطوارئ">
+          <div className="space-y-2 pt-1">
+            <a href="tel:065389222"
+              className="flex items-center justify-between bg-slate-50 rounded-xl px-4 py-3 hover:bg-slate-100 transition border border-slate-200">
+              <span className="text-sm text-slate-700 font-medium">📱 إدارة الحملة</span>
+              <span className="font-black text-slate-900 text-lg">065389222</span>
+            </a>
+            <a href="https://wa.me/97165389222" target="_blank" rel="noopener noreferrer"
+              className="flex items-center justify-between bg-green-50 rounded-xl px-4 py-3 hover:bg-green-100 transition border border-green-200">
+              <span className="text-sm text-green-700 font-medium">💬 واتساب الحملة</span>
+              <span className="font-bold text-green-700">تواصل الآن ←</span>
+            </a>
+            {pilgrim.emergency_contact_name && pilgrim.emergency_contact_phone ? (
+              <a href={`tel:${pilgrim.emergency_contact_phone}`}
+                className="flex items-center justify-between bg-red-50 rounded-xl px-4 py-3 hover:bg-red-100 transition border border-red-200">
+                <span className="text-sm text-red-700 font-medium">🆘 {pilgrim.emergency_contact_name}</span>
+                <span className="font-bold text-red-800">{pilgrim.emergency_contact_phone}</span>
+              </a>
+            ) : (
+              <div className="flex items-center justify-between bg-slate-50 rounded-xl px-4 py-3 border border-slate-200">
+                <span className="text-sm text-slate-400">🆘 جهة الطوارئ</span>
+                <span className="text-sm text-slate-300">غير محدد</span>
+              </div>
+            )}
+          </div>
+        </Section>
+
+        {/* === الملاحظات === */}
         <PilgrimMessages pilgrimId={pilgrimId} initialMessages={messages} />
 
       </main>
+    </div>
+  );
+}
+
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+      <div className="px-4 py-3 border-b border-slate-100">
+        <p className="font-bold text-slate-800 text-sm">{title}</p>
+      </div>
+      <div className="px-4 py-1 divide-y divide-slate-100">{children}</div>
+    </div>
+  );
+}
+
+function InfoRow({ label, value, highlight = false }: { label: string; value?: string | number | null; highlight?: boolean }) {
+  return (
+    <div className="flex items-center justify-between py-2.5">
+      <span className="text-sm text-slate-500">{label}</span>
+      {value ? (
+        <span className={`text-sm font-semibold ${highlight ? "text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-lg border border-emerald-200 text-base font-black" : "text-slate-800"}`}>
+          {value}
+        </span>
+      ) : (
+        <span className="text-sm text-slate-300">غير متوفر</span>
+      )}
     </div>
   );
 }
