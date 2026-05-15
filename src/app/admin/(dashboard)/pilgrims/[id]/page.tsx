@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowRight, User, Home, Users, Bus, ShoppingCart, Phone, CreditCard, Passport, AlertCircle } from "lucide-react";
+import { ArrowRight, User, Home, Users, Bus, ShoppingCart, AlertCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 export default function PilgrimProfilePage() {
