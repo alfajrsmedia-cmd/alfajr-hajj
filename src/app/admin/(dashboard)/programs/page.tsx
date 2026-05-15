@@ -11,6 +11,8 @@ const LEVEL_COLORS: Record<string, string> = {
 }
 
 export default function ProgramsPage() {
+  const [campaigns, setCampaigns] = useState<{ id: number; name: string }[]>([])
+  const [selectedCampaign, setSelectedCampaign] = useState<number | null>(null)
   const [programs, setPrograms] = useState<string[]>([])
   const [selectedProgram, setSelectedProgram] = useState('')
   const [pilgrims, setPilgrims] = useState<any[]>([])
@@ -21,11 +23,23 @@ export default function ProgramsPage() {
   const [counts, setCounts] = useState<Record<string, number>>({})
   const supabase = createClient()
 
-  useEffect(() => { loadPrograms() }, [])
-  useEffect(() => { if (selectedProgram) loadPilgrims() }, [selectedProgram])
+  useEffect(() => { loadCampaigns() }, [])
+  useEffect(() => { if (selectedCampaign !== null) loadPrograms() }, [selectedCampaign])
+  useEffect(() => { if (selectedProgram && selectedCampaign !== null) loadPilgrims() }, [selectedProgram, selectedCampaign])
+
+  async function loadCampaigns() {
+    const { data } = await supabase.from('campaigns').select('id, name').order('id')
+    if (data && data.length > 0) {
+      setCampaigns(data)
+      setSelectedCampaign(data[0].id)
+    }
+  }
 
   async function loadPrograms() {
-    const { data } = await supabase.from('pilgrims').select('program')
+    const { data } = await supabase
+      .from('pilgrims')
+      .select('program')
+      .eq('campaign_id', selectedCampaign!)
     if (data) {
       const c: Record<string, number> = {}
       data.forEach((p: any) => { if (p.program) c[p.program] = (c[p.program] || 0) + 1 })
@@ -46,6 +60,7 @@ export default function ProgramsPage() {
       .select(`id, full_name, program, room_type, level, travel_from, travel_to,
         groups(group_number, leader_name),
         housing_assignments(rooms(room_number))`)
+      .eq('campaign_id', selectedCampaign!)
       .eq('program', selectedProgram)
       .order('full_name')
     setPilgrims(data || [])
@@ -96,7 +111,8 @@ export default function ProgramsPage() {
     const blob = new Blob(['\ufeff' + rows], { type: 'text/csv;charset=utf-8' })
     const a = document.createElement('a')
     a.href = URL.createObjectURL(blob)
-    a.download = `${selectedProgram}.csv`
+    const campaignName = campaigns.find(c => c.id === selectedCampaign)?.name || ''
+    a.download = `${campaignName} - ${selectedProgram}.csv`
     a.click()
   }
 
@@ -106,6 +122,30 @@ export default function ProgramsPage() {
       <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
         <h1 className="text-2xl font-bold text-slate-900">✈️ البرامج</h1>
       </div>
+
+      {/* Campaign filter */}
+      {campaigns.length > 1 && (
+        <div className="flex gap-2 flex-wrap mb-4 items-center">
+          <span className="text-sm font-medium text-slate-500">🏕️ الحملة:</span>
+          {campaigns.map(c => (
+            <button key={c.id} onClick={() => { setSelectedCampaign(c.id); setSelectedProgram('') }}
+              className={`px-4 py-1.5 rounded-full text-sm font-medium transition border ${
+                selectedCampaign === c.id
+                  ? 'bg-indigo-600 text-white border-indigo-600'
+                  : 'bg-white text-slate-600 border-slate-300 hover:border-indigo-400'
+              }`}>
+              {c.name}
+            </button>
+          ))}
+        </div>
+      )}
+      {campaigns.length === 1 && selectedCampaign !== null && (
+        <div className="mb-4">
+          <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-indigo-50 border border-indigo-200 text-indigo-700 rounded-full text-sm font-medium">
+            🏕️ {campaigns[0]?.name}
+          </span>
+        </div>
+      )}
 
       {/* Program tabs */}
       <div className="flex gap-2 flex-wrap mb-5">
