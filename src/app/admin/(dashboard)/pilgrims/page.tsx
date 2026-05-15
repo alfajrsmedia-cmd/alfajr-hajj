@@ -1,9 +1,11 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
 export default function PilgrimsPage() {
+  const router = useRouter()
   const [pilgrims, setPilgrims] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -68,9 +70,9 @@ export default function PilgrimsPage() {
                 const room = ha?.rooms
                 const floor = room?.floors?.floor_number
                 return (
-                  <tr key={p.id} className="border-b border-slate-100 hover:bg-slate-50 transition">
+                  <tr key={p.id} onClick={() => router.push(`/admin/pilgrims/${p.id}`)} className="border-b border-slate-100 hover:bg-emerald-50 cursor-pointer transition">
                     <td className="px-4 py-3 text-slate-400 text-xs">{page * PAGE_SIZE + i + 1}</td>
-                    <td className="px-4 py-3 font-medium text-slate-900">{p.full_name}</td>
+                    <td className="px-4 py-3 font-medium text-slate-900 hover:text-emerald-700">{p.full_name}</td>
                     <td className="px-4 py-3">
                       {p.groups?.group_number ? <span className="bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full text-xs font-bold border border-amber-200">{p.groups.group_number}</span> : <span className="text-slate-300 text-xs">—</span>}
                     </td>
