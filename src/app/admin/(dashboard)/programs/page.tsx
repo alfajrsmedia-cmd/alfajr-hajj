@@ -12,7 +12,6 @@ interface Pilgrim {
   permit_number: number | null
   gender: string | null
   nationality: string | null
-  role: string | null
   program_id: number | null
   groups: { group_number: number; leader_name: string | null } | null
   housing_assignments: { rooms: { room_number: string } | null }[]
@@ -40,7 +39,7 @@ export default function ProgramsPage() {
       supabase.from('programs').select('id, name_ar').order('id'),
       supabase
         .from('pilgrims')
-        .select(`id, full_name, english_name, passport_number, permit_number, gender, nationality, role, program_id,
+        .select(`id, full_name, english_name, passport_number, permit_number, gender, nationality, program_id,
           groups(group_number, leader_name),
           housing_assignments(rooms(room_number))`)
         .order('full_name'),
@@ -112,7 +111,6 @@ export default function ProgramsPage() {
         GENDER_LABEL[p.gender || ''] || p.gender || '',
         p.groups?.group_number || '',
         p.groups?.leader_name || '',
-        p.role || '',
         p.housing_assignments?.[0]?.rooms?.room_number || '',
         p.nationality || '',
       ])
@@ -233,7 +231,6 @@ export default function ProgramsPage() {
                 <th className="text-right px-3 py-3 font-semibold text-slate-600">الجنس</th>
                 <th className="text-right px-3 py-3 font-semibold text-slate-600">المجموعة</th>
                 <th className="text-right px-3 py-3 font-semibold text-slate-600">مسؤول المجموعة</th>
-                <th className="text-right px-3 py-3 font-semibold text-slate-600">الدور</th>
                 <th className="text-right px-3 py-3 font-semibold text-slate-600">الغرفة</th>
               </tr>
             </thead>
@@ -277,7 +274,6 @@ export default function ProgramsPage() {
                         : <span className="text-slate-300 text-xs">—</span>}
                     </td>
                     <td className="px-3 py-2.5 text-slate-600 text-xs max-w-[160px] truncate">{p.groups?.leader_name || '—'}</td>
-                    <td className="px-3 py-2.5 text-slate-600 text-xs">{p.role || <span className="text-slate-300">—</span>}</td>
                     <td className="px-3 py-2.5">
                       {room?.room_number
                         ? <span className="bg-blue-50 text-blue-700 px-2 py-0.5 rounded text-xs font-bold">{room.room_number}</span>
