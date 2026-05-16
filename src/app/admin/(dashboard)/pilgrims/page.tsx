@@ -21,7 +21,17 @@ export default function PilgrimsPage() {
       .select(`id, full_name, groups(group_number, leader_name), housing_assignments(rooms(room_number, floors(floor_number)))`, { count: 'exact' })
       .order('full_name')
       .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1)
-    if (search) query = query.ilike('full_name', `%${search}%`)
+    if (search) {
+      const isNumeric = /^\d+$/.test(search.trim())
+      const normalized = search.trim().startsWith('971') && search.trim().length === 12
+        ? '0' + search.trim().slice(3)
+        : search.trim()
+      if (isNumeric) {
+        query = query.or(`phone.eq.${normalized},phone.eq.${search.trim()},permit_number.eq.${search.trim()},national_id.eq.${search.trim()},passport_number.ilike.${search.trim()}`)
+      } else {
+        query = query.ilike('full_name', `%${search}%`)
+      }
+    }
     const { data, count } = await query
     setPilgrims(data || [])
     setTotal(count || 0)
