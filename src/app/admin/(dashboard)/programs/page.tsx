@@ -100,7 +100,7 @@ export default function ProgramsPage() {
   }
 
   function exportCSV() {
-    const prog = programsList.find(p => p.id === selectedProgram)?.name || ''
+    const prog = programsList.find(p => p.id === selectedProgram)?.name_ar || ''
     const rows = [
       ['#', 'اسم الحاج', 'الاسم بالإنجليزية', 'رقم الجواز', 'رقم التصريح', 'الجنس', 'المجموعة', 'مسؤول المجموعة', 'الدور', 'الغرفة', 'الجنسية'],
       ...filtered.map((p, i) => [
