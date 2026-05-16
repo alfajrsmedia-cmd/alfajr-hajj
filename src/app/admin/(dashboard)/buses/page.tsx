@@ -208,6 +208,7 @@ export default function BusesPage() {
                   <th className="px-4 py-3 text-right">رقم الهوية</th>
                   <th className="px-4 py-3 text-right">المرجع</th>
                   <th className="px-4 py-3 text-right">المجموعة</th>
+                  <th className="px-4 py-3 text-right">الجوال</th>
                 </tr>
               </thead>
               <tbody>
