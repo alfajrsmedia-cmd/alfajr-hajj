@@ -25,6 +25,10 @@ export default function PilgrimsPage() {
       const mapped = (data || []).map((p: any) => ({
         id: p.id,
         full_name: p.full_name,
+        program: p.program,
+        room_type: p.room_type,
+        gender: p.gender,
+        phone: p.phone,
         groups: p.group_number ? { group_number: p.group_number, leader_name: p.leader_name } : null,
         housing_assignments: p.room_number ? [{ rooms: { room_number: p.room_number, floors: { floor_number: null, floor_name: p.floor_name } } }] : [],
       }))
@@ -34,7 +38,7 @@ export default function PilgrimsPage() {
       // No search: paginated list
       const { data, count } = await supabase
         .from('pilgrims')
-        .select(`id, full_name, groups(group_number, leader_name), housing_assignments(rooms(room_number, floors(floor_number)))`, { count: 'exact' })
+        .select(`id, full_name, program, room_type, gender, phone, groups(group_number, leader_name), housing_assignments(rooms(room_number, floors(floor_number)))`, { count: 'exact' })
         .order('full_name')
         .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1)
       setPilgrims(data || [])
@@ -66,6 +70,9 @@ export default function PilgrimsPage() {
               <tr className="bg-slate-50 border-b border-slate-200">
                 <th className="text-right px-4 py-3 font-semibold text-slate-700">#</th>
                 <th className="text-right px-4 py-3 font-semibold text-slate-700">الاسم</th>
+                <th className="text-right px-4 py-3 font-semibold text-slate-700">البرنامج</th>
+                <th className="text-right px-4 py-3 font-semibold text-slate-700">نوع الغرفة</th>
+                <th className="text-right px-4 py-3 font-semibold text-slate-700">الجنس</th>
                 <th className="text-right px-4 py-3 font-semibold text-slate-700">المجموعة</th>
                 <th className="text-right px-4 py-3 font-semibold text-slate-700">المسؤول</th>
                 <th className="text-right px-4 py-3 font-semibold text-slate-700">الدور</th>
@@ -79,7 +86,7 @@ export default function PilgrimsPage() {
                   جاري التحميل...
                 </td></tr>
               ) : pilgrims.length === 0 ? (
-                <tr><td colSpan={6} className="text-center py-12 text-slate-400">لا توجد نتائج</td></tr>
+                <tr><td colSpan={9} className="text-center py-12 text-slate-400">لا توجد نتائج</td></tr>
               ) : pilgrims.map((p, i) => {
                 const ha = p.housing_assignments?.[0]
                 const room = ha?.rooms

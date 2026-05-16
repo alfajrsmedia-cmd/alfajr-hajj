@@ -18,6 +18,7 @@ type BusRow = {
   passport_number: string
   group_number: number
   full_name: string
+  phone?: string
 }
 
 export default function BusesPage() {
@@ -36,13 +37,24 @@ export default function BusesPage() {
 
   async function fetchData() {
     setLoading(true)
-    const { data } = await supabase
+    const { data: busData } = await supabase
       .from('bus_distribution')
       .select('*')
       .order('bus_number')
-    if (data) {
-      setRows(data)
-      setFiltered(data)
+
+    if (busData) {
+      const passports = busData.map(r => r.passport_number).filter(Boolean)
+      const { data: pilgrimsData } = await supabase
+        .from('pilgrims')
+        .select('passport_number, phone')
+        .in('passport_number', passports)
+
+      const phoneMap: Record<string, string> = {}
+      pilgrimsData?.forEach(p => { if (p.passport_number) phoneMap[p.passport_number] = p.phone || '' })
+
+      const merged = busData.map(r => ({ ...r, phone: phoneMap[r.passport_number] || '' }))
+      setRows(merged)
+      setFiltered(merged)
     }
     setLoading(false)
   }
@@ -57,6 +69,7 @@ export default function BusesPage() {
         r.full_name?.includes(q) ||
         r.passport_number?.includes(q) ||
         r.national_id?.includes(q) ||
+        r.phone?.includes(q) ||
         String(r.ref_number)?.includes(q) ||
         String(r.bus_number)?.includes(q) ||
         String(r.group_number)?.includes(q)
@@ -77,6 +90,7 @@ export default function BusesPage() {
         <td>باص ${r.bus_number}</td>
         <td>${r.campaign}</td>
         <td>${r.full_name}</td>
+        <td>${r.phone || '—'}</td>
         <td>${r.passport_number}</td>
         <td>${r.national_id}</td>
         <td>${r.ref_number}</td>
@@ -118,6 +132,7 @@ export default function BusesPage() {
               <th>الباص</th>
               <th>الحملة</th>
               <th>الاسم</th>
+              <th>الجوال</th>
               <th>رقم الجواز</th>
               <th>رقم الهوية</th>
               <th>المرجع</th>
@@ -206,7 +221,7 @@ export default function BusesPage() {
               </thead>
               <tbody>
                 {filtered.length === 0 ? (
-                  <tr><td colSpan={8} className="text-center py-12 text-gray-400">لا توجد نتائج</td></tr>
+                  <tr><td colSpan={9} className="text-center py-12 text-gray-400">لا توجد نتائج</td></tr>
                 ) : filtered.map((r, i) => (
                   <tr key={r.id} className={`border-b border-gray-100 hover:bg-blue-50 ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
                     <td className="px-4 py-3 text-gray-400">{i + 1}</td>
@@ -225,6 +240,7 @@ export default function BusesPage() {
                     <td className="px-4 py-3 text-gray-600 font-mono text-xs">{r.national_id}</td>
                     <td className="px-4 py-3 text-gray-500">{r.ref_number}</td>
                     <td className="px-4 py-3 text-gray-600">{r.group_number}</td>
+                    <td className="px-4 py-3 text-gray-600 font-mono text-xs">{r.phone || '—'}</td>
                   </tr>
                 ))}
               </tbody>
