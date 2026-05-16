@@ -18,6 +18,7 @@ export default async function PilgrimPage({
     .select(
       `id, full_name, passport_number, national_id, phone, program, room_type,
        level, travel_from, travel_to, emergency_contact_name, emergency_contact_phone,
+       permit_photo_path,
        groups(group_number, group_name, leader_name, leader_phone)`
     )
     .eq("id", pilgrimId)
@@ -62,6 +63,9 @@ export default async function PilgrimPage({
   const roommates = (roommatesRes.data as any[]) || [];
   const messages = messagesRes.data || [];
   const group = pilgrim.groups as any;
+  const permitFileUrl = pilgrim.permit_photo_path
+    ? `https://gnsdsisqsltxoujfslvf.supabase.co/storage/v1/object/public/pilgrim-docs/${pilgrim.permit_photo_path}`
+    : `https://alfajr-hajj.vercel.app/pilgrim/${pilgrimId}/permit`;
 
   return (
     <div className="min-h-screen bg-slate-100" dir="rtl">
@@ -82,9 +86,7 @@ export default async function PilgrimPage({
         <div className="bg-emerald-700 rounded-2xl overflow-hidden shadow-md">
           <div className="p-5 flex items-start gap-4">
             <div className="bg-white rounded-xl p-1.5 shrink-0 shadow">
-              <PilgrimQR
-                data={`https://alfajr-hajj.vercel.app/pilgrim/${pilgrimId}/permit`}
-              />
+              <PilgrimQR data={permitFileUrl} />
             </div>
             <div className="flex-1 min-w-0">
               {cp?.ref_number && (

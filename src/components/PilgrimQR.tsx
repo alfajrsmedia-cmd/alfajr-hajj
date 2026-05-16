@@ -2,6 +2,6 @@
 
 import { QRCodeSVG } from "qrcode.react";
 
-export default function PilgrimQR({ data }: { data: string }) {
-  return <QRCodeSVG value={data} size={80} level="M" />;
+export default function PilgrimQR({ data, size = 80 }: { data: string; size?: number }) {
+  return <QRCodeSVG value={data} size={size} level="M" />;
 }
