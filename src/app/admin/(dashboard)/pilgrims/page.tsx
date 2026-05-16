@@ -16,20 +16,22 @@ export default function PilgrimsPage() {
 
   const loadPilgrims = useCallback(async () => {
     setLoading(true)
+    const s = search.trim()
     let query = supabase
       .from('pilgrims')
-      .select(`id, full_name, groups(group_number, leader_name), housing_assignments(rooms(room_number, floors(floor_number)))`, { count: 'exact' })
+      .select(`id, full_name, search_name, groups(group_number, leader_name), housing_assignments(rooms(room_number, floors(floor_number)))`, { count: 'exact' })
       .order('full_name')
       .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1)
-    if (search) {
-      const isNumeric = /^\d+$/.test(search.trim())
-      const normalized = search.trim().startsWith('971') && search.trim().length === 12
-        ? '0' + search.trim().slice(3)
-        : search.trim()
+    if (s) {
+      const isNumeric = /^\d+$/.test(s)
       if (isNumeric) {
-        query = query.or(`phone.eq.${normalized},phone.eq.${search.trim()},permit_number.eq.${search.trim()},national_id.eq.${search.trim()},passport_number.ilike.${search.trim()}`)
+        const normalized = s.startsWith('971') ? '0' + s.slice(3) : s
+        query = query.or(
+          `phone.ilike.%${normalized}%,phone.ilike.%${s}%,permit_number::text.ilike.${s}%,national_id.ilike.%${s}%,passport_number.ilike.%${s}%`
+        )
       } else {
-        query = query.ilike('full_name', `%${search}%`)
+        const norm = s.replace(/[ً-ٟؐ-ؚٰۖ-ۭ]/g, '')
+        query = query.ilike('search_name', `%${norm}%`)
       }
     }
     const { data, count } = await query

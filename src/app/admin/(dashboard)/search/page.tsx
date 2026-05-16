@@ -21,7 +21,7 @@ export default function SearchPage() {
 
   const handleSearch = useCallback(async (val: string) => {
     setQuery(val);
-    if (val.length < 2) {
+    if (val.length < 1) {
       setResults([]);
       setSearched(false);
       return;
@@ -46,7 +46,7 @@ export default function SearchPage() {
           type="text"
           value={query}
           onChange={e => handleSearch(e.target.value)}
-          placeholder="اكتب جزء من اسم الحاج..."
+          placeholder="اكتب اسم أو رقم هاتف أو رقم تصريح..."
           className="w-full px-4 py-3 border border-slate-200 rounded-xl text-right focus:outline-none focus:ring-2 focus:ring-emerald-400 text-slate-800 placeholder-slate-400 text-lg"
           autoFocus
         />
@@ -57,7 +57,7 @@ export default function SearchPage() {
           <p className="text-center text-slate-400 py-8">جاري البحث...</p>
         )}
         {!loading && !searched && (
-          <p className="text-center text-slate-400 py-8">اكتب جزء من اسم الحاج للبحث</p>
+          <p className="text-center text-slate-400 py-8">اكتب جزء من الاسم أو الرقم للبحث</p>
         )}
         {!loading && searched && results.length === 0 && (
           <p className="text-center text-slate-400 py-8">لا توجد نتائج</p>
