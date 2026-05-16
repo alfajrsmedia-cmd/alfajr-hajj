@@ -17,26 +17,29 @@ export default function PilgrimsPage() {
   const loadPilgrims = useCallback(async () => {
     setLoading(true)
     const s = search.trim()
-    let query = supabase
-      .from('pilgrims')
-      .select(`id, full_name, search_name, groups(group_number, leader_name), housing_assignments(rooms(room_number, floors(floor_number)))`, { count: 'exact' })
-      .order('full_name')
-      .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1)
+
     if (s) {
-      const isNumeric = /^\d+$/.test(s)
-      if (isNumeric) {
-        const normalized = s.startsWith('971') ? '0' + s.slice(3) : s
-        query = query.or(
-          `phone.ilike.%${normalized}%,phone.ilike.%${s}%,permit_number::text.ilike.${s}%,national_id.ilike.%${s}%,passport_number.ilike.%${s}%`
-        )
-      } else {
-        const norm = s.replace(/[ً-ٟؐ-ؚٰۖ-ۭ]/g, '')
-        query = query.ilike('search_name', `%${norm}%`)
-      }
+      // Use RPC for search — handles diacritics and partial numbers correctly
+      const { data } = await supabase.rpc('search_pilgrims', { query: s })
+      // Map RPC result shape to match table expectations
+      const mapped = (data || []).map((p: any) => ({
+        id: p.id,
+        full_name: p.full_name,
+        groups: p.group_number ? { group_number: p.group_number, leader_name: p.leader_name } : null,
+        housing_assignments: p.room_number ? [{ rooms: { room_number: p.room_number, floors: { floor_number: null, floor_name: p.floor_name } } }] : [],
+      }))
+      setPilgrims(mapped)
+      setTotal(mapped.length)
+    } else {
+      // No search: paginated list
+      const { data, count } = await supabase
+        .from('pilgrims')
+        .select(`id, full_name, groups(group_number, leader_name), housing_assignments(rooms(room_number, floors(floor_number)))`, { count: 'exact' })
+        .order('full_name')
+        .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1)
+      setPilgrims(data || [])
+      setTotal(count || 0)
     }
-    const { data, count } = await query
-    setPilgrims(data || [])
-    setTotal(count || 0)
     setLoading(false)
   }, [search, page])
 
@@ -80,17 +83,18 @@ export default function PilgrimsPage() {
               ) : pilgrims.map((p, i) => {
                 const ha = p.housing_assignments?.[0]
                 const room = ha?.rooms
-                const floor = room?.floors?.floor_number
+                const floorNum = room?.floors?.floor_number
+                const floorName = room?.floors?.floor_name
                 return (
                   <tr key={p.id} onClick={() => router.push(`/admin/pilgrims/${p.id}`)} className="border-b border-slate-100 hover:bg-emerald-50 cursor-pointer transition">
-                    <td className="px-4 py-3 text-slate-400 text-xs">{page * PAGE_SIZE + i + 1}</td>
+                    <td className="px-4 py-3 text-slate-400 text-xs">{search ? i + 1 : page * PAGE_SIZE + i + 1}</td>
                     <td className="px-4 py-3 font-medium text-slate-900 hover:text-emerald-700">{p.full_name}</td>
                     <td className="px-4 py-3">
                       {p.groups?.group_number ? <span className="bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full text-xs font-bold border border-amber-200">{p.groups.group_number}</span> : <span className="text-slate-300 text-xs">—</span>}
                     </td>
                     <td className="px-4 py-3 text-slate-600 text-xs max-w-[180px] truncate">{p.groups?.leader_name || '—'}</td>
                     <td className="px-4 py-3">
-                      {floor ? <span className="bg-purple-50 text-purple-700 px-2 py-0.5 rounded text-xs">{FLOOR_NAMES[String(floor)] || floor}</span> : <span className="text-slate-300 text-xs">—</span>}
+                      {floorName || floorNum ? <span className="bg-purple-50 text-purple-700 px-2 py-0.5 rounded text-xs">{floorName || FLOOR_NAMES[String(floorNum)] || floorNum}</span> : <span className="text-slate-300 text-xs">—</span>}
                     </td>
                     <td className="px-4 py-3">
                       {room?.room_number ? <span className="bg-blue-50 text-blue-700 px-2 py-0.5 rounded text-xs font-bold">{room.room_number}</span> : <span className="text-slate-300 text-xs">—</span>}
