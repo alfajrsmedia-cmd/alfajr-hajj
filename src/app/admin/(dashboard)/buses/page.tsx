@@ -39,20 +39,11 @@ export default function BusesPage() {
     setLoading(true)
     const { data: busData } = await supabase
       .from('bus_distribution')
-      .select('*')
+      .select('*, pilgrims(phone)')
       .order('bus_number')
 
     if (busData) {
-      const passports = busData.map(r => r.passport_number).filter(Boolean)
-      const { data: pilgrimsData } = await supabase
-        .from('pilgrims')
-        .select('passport_number, phone')
-        .in('passport_number', passports)
-
-      const phoneMap: Record<string, string> = {}
-      pilgrimsData?.forEach(p => { if (p.passport_number) phoneMap[p.passport_number] = p.phone || '' })
-
-      const merged = busData.map(r => ({ ...r, phone: phoneMap[r.passport_number] || '' }))
+      const merged = busData.map(r => ({ ...r, phone: (r.pilgrims as any)?.phone || '' }))
       setRows(merged)
       setFiltered(merged)
     }
