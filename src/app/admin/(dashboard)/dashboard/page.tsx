@@ -111,7 +111,6 @@ export default async function DashboardPage() {
           {Object.entries(floorStats)
             .sort(([a], [b]) => parseInt(a) - parseInt(b))
             .map(([floor, stats]) => {
-              const percent = (stats.occupied / stats.capacity) * 100;
               return (
                 <div key={floor}>
                   <div className="flex items-center justify-between text-sm mb-1">
@@ -122,13 +121,13 @@ export default async function DashboardPage() {
                       </span>
                     </span>
                     <span className="text-slate-600 arabic-num">
-                      {stats.occupied} / {stats.capacity}
+                      {stats.occupied} حاج
                     </span>
                   </div>
                   <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
                     <div
                       className="h-full bg-emerald-500 transition-all"
-                      style={{ width: `${Math.min(percent, 100)}%` }}
+                      style={{ width: `${Math.min((stats.occupied / 200) * 100, 100)}%` }}
                     />
                   </div>
                 </div>
