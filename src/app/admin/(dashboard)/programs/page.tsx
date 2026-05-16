@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
-interface Program { id: number; name: string }
+interface Program { id: number; name_ar: string }
 interface Pilgrim {
   id: number
   full_name: string
@@ -37,7 +37,7 @@ export default function ProgramsPage() {
   async function loadAll() {
     setLoading(true)
     const [{ data: progs }, { data: pils }] = await Promise.all([
-      supabase.from('programs').select('id, name').order('id'),
+      supabase.from('programs').select('id, name_ar').order('id'),
       supabase
         .from('pilgrims')
         .select(`id, full_name, english_name, passport_number, permit_number, gender, nationality, role, program_id,
@@ -147,7 +147,7 @@ export default function ProgramsPage() {
                 ? 'bg-emerald-600 text-white border-emerald-600'
                 : 'bg-white text-slate-600 border-slate-300 hover:border-emerald-400'
             }`}>
-            ✈️ {prog.name}
+            ✈️ {prog.name_ar}
             <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${
               selectedProgram === prog.id ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-600'
             }`}>{counts[prog.id] || 0}</span>
