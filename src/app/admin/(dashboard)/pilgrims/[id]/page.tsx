@@ -32,12 +32,13 @@ export default function PilgrimProfilePage() {
     if (!p) { setLoading(false); return; }
 
     // جلب اسم البرنامج بشكل منفصل
+    let programName = null;
     if (p.program_id) {
       const { data: prog } = await supabase.from("programs").select("name_ar").eq("id", p.program_id).single();
-      p.programName = prog?.name_ar || null;
+      programName = prog?.name_ar || null;
     }
 
-    setPilgrim(p);
+    setPilgrim({ ...p, programName });
 
     const passport = p.passport_number?.trim();
     const natId    = p.national_id?.trim();
