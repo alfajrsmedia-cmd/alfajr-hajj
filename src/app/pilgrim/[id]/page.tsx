@@ -83,12 +83,7 @@ export default async function PilgrimPage({
           <div className="p-5 flex items-start gap-4">
             <div className="bg-white rounded-xl p-1.5 shrink-0 shadow">
               <PilgrimQR
-                data={JSON.stringify({
-                  id: pilgrimId,
-                  name: pilgrim.full_name,
-                  ref: cp?.ref_number,
-                  group: group?.group_number,
-                })}
+                data={`https://alfajr-hajj.vercel.app/pilgrim/${pilgrimId}/permit`}
               />
             </div>
             <div className="flex-1 min-w-0">
