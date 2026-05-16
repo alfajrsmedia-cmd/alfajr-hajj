@@ -25,11 +25,18 @@ export default function PilgrimProfilePage() {
 
     const { data: p } = await supabase
       .from("pilgrims")
-      .select("*, groups(group_number, group_name, leader_name, leader_phone), campaigns(name, hijri_year, year), programs(name_ar)")
+      .select("*, groups(group_number, group_name, leader_name, leader_phone), campaigns(name, hijri_year, year)")
       .eq("id", pilgrimId)
       .single();
 
     if (!p) { setLoading(false); return; }
+
+    // جلب اسم البرنامج بشكل منفصل
+    if (p.program_id) {
+      const { data: prog } = await supabase.from("programs").select("name_ar").eq("id", p.program_id).single();
+      p.programName = prog?.name_ar || null;
+    }
+
     setPilgrim(p);
 
     const passport = p.passport_number?.trim();
@@ -78,7 +85,7 @@ export default function PilgrimProfilePage() {
           <h1 className="text-2xl font-bold text-slate-900">{pilgrim.full_name}</h1>
           <div className="flex flex-wrap gap-3 mt-2">
             {pilgrim.campaigns?.name && <Badge color="slate">{pilgrim.campaigns.name}</Badge>}
-            {pilgrim.programs?.name_ar && <Badge color="emerald">{pilgrim.programs.name_ar}</Badge>}
+            {pilgrim.programName && <Badge color="emerald">{pilgrim.programName}</Badge>}
             {pilgrim.groups?.group_number && <Badge color="amber">مجموعة {pilgrim.groups.group_number}</Badge>}
             {housing?.room_number && <Badge color="blue">غرفة {housing.room_number}</Badge>}
             {housing?.floor_name && <Badge color="purple">{housing.floor_name}</Badge>}
@@ -121,7 +128,7 @@ export default function PilgrimProfilePage() {
           <Row label="الجنسية"         value={pilgrim.nationality} />
           <Row label="تاريخ الميلاد"   value={pilgrim.birth_date} />
           <Row label="البريد الإلكتروني" value={pilgrim.email} />
-          <Row label="البرنامج"        value={pilgrim.programs?.name_ar} />
+          <Row label="البرنامج"        value={pilgrim.programName} />
           <Row label="نوع الغرفة"      value={pilgrim.room_type} />
           <Row label="المستوى"         value={pilgrim.level} />
           <Row label="تاريخ السفر ذهاب" value={pilgrim.travel_from} />
