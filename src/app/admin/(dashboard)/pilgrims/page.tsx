@@ -70,9 +70,6 @@ export default function PilgrimsPage() {
               <tr className="bg-slate-50 border-b border-slate-200">
                 <th className="text-right px-4 py-3 font-semibold text-slate-700">#</th>
                 <th className="text-right px-4 py-3 font-semibold text-slate-700">الاسم</th>
-                <th className="text-right px-4 py-3 font-semibold text-slate-700">البرنامج</th>
-                <th className="text-right px-4 py-3 font-semibold text-slate-700">نوع الغرفة</th>
-                <th className="text-right px-4 py-3 font-semibold text-slate-700">الجنس</th>
                 <th className="text-right px-4 py-3 font-semibold text-slate-700">المجموعة</th>
                 <th className="text-right px-4 py-3 font-semibold text-slate-700">المسؤول</th>
                 <th className="text-right px-4 py-3 font-semibold text-slate-700">الدور</th>
@@ -86,7 +83,7 @@ export default function PilgrimsPage() {
                   جاري التحميل...
                 </td></tr>
               ) : pilgrims.length === 0 ? (
-                <tr><td colSpan={9} className="text-center py-12 text-slate-400">لا توجد نتائج</td></tr>
+                <tr><td colSpan={6} className="text-center py-12 text-slate-400">لا توجد نتائج</td></tr>
               ) : pilgrims.map((p, i) => {
                 const ha = p.housing_assignments?.[0]
                 const room = ha?.rooms
