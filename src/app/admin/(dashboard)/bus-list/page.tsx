@@ -16,6 +16,7 @@ type BusItem = {
   campaign: string
   passport_number: string
   national_id: string
+  phone: string | null
 }
 
 export default function BusListPage() {
@@ -97,11 +98,12 @@ export default function BusListPage() {
                   <th className="px-4 py-3 text-right">الاسم</th>
                   <th className="px-4 py-3 text-right">الحملة</th>
                   <th className="px-4 py-3 text-right">رقم الجواز</th>
+                  <th className="px-4 py-3 text-right">الجوال</th>
                 </tr>
               </thead>
               <tbody>
                 {filtered.length === 0 ? (
-                  <tr><td colSpan={6} className="text-center py-12 text-gray-400">لا توجد نتائج</td></tr>
+                  <tr><td colSpan={7} className="text-center py-12 text-gray-400">لا توجد نتائج</td></tr>
                 ) : filtered.map((r, i) => (
                   <tr key={r.id} className={`border-b border-gray-100 hover:bg-blue-50 ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
                     <td className="px-4 py-3 text-gray-400">{i + 1}</td>
@@ -112,6 +114,7 @@ export default function BusListPage() {
                     <td className="px-4 py-3 font-medium text-gray-800">{r.full_name}</td>
                     <td className="px-4 py-3 text-gray-600">{r.campaign}</td>
                     <td className="px-4 py-3 text-gray-600 font-mono text-xs">{r.passport_number}</td>
+                    <td className="px-4 py-3 text-gray-600 font-mono text-xs">{r.phone || '—'}</td>
                   </tr>
                 ))}
               </tbody>
