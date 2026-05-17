@@ -16,6 +16,7 @@ export default function PilgrimProfilePage() {
   const [bus, setBus]           = useState<any>(null);
   const [golf, setGolf]         = useState<any[]>([]);
   const [campaign, setCampaign] = useState<any>(null);
+  const [mina, setMina]         = useState<any>(null);
   const [loading, setLoading]   = useState(true);
 
   useEffect(() => { load() }, [pilgrimId]);
@@ -48,6 +49,7 @@ export default function PilgrimProfilePage() {
       { data: b },
       { data: g },
       { data: c },
+      { data: mn },
     ] = await Promise.all([
       supabase.from("v_pilgrim_housing").select("*").eq("pilgrim_id", pilgrimId).maybeSingle(),
       supabase.from("bus_distribution").select("*")
@@ -58,12 +60,16 @@ export default function PilgrimProfilePage() {
       supabase.from("campaign_pilgrims").select("*")
         .or(`passport_number.eq.${passport},national_id.eq.${natId}`)
         .maybeSingle(),
+      supabase.from("mina_camps").select("*")
+        .eq("full_name", p.full_name?.trim())
+        .maybeSingle(),
     ]);
 
     setHousing(h);
     setBus(b);
     setGolf(g || []);
     setCampaign(c);
+    setMina(mn);
     setLoading(false);
   }
 
@@ -91,6 +97,7 @@ export default function PilgrimProfilePage() {
             {housing?.room_number && <Badge color="blue">غرفة {housing.room_number}</Badge>}
             {housing?.floor_name && <Badge color="purple">{housing.floor_name}</Badge>}
             {bus?.bus_number && <Badge color="rose">باص {bus.bus_number}</Badge>}
+            {mina?.tent_number && <Badge color="green">خيمة منى {mina.tent_number}</Badge>}
           </div>
         </div>
         <Link
@@ -178,6 +185,15 @@ export default function PilgrimProfilePage() {
           </> : <Empty text="لا يوجد توزيع باص مسجل" />}
         </Section>
 
+        {/* مخيمات منى */}
+        <Section title="مخيمات منى" icon={<span>🏕️</span>}>
+          {mina ? <>
+            <Row label="رقم الخيمة"   value={mina.tent_number} />
+            <Row label="رقم المجموعة" value={mina.group_number} />
+            <Row label="الجنس"        value={mina.gender} />
+          </> : <Empty text="لا يوجد توزيع خيمة مسجل" />}
+        </Section>
+
         {/* عربات القولف */}
         <Section title="عربات القولف" icon={<ShoppingCart className="w-4 h-4" />}>
           {golf.length === 0 ? <Empty text="لا يوجد حجز عربة قولف" /> : golf.map((g, i) => (
@@ -227,6 +243,7 @@ function Badge({ children, color }: { children: React.ReactNode; color: string }
     purple:  "bg-purple-50 text-purple-700 border-purple-200",
     rose:    "bg-rose-50 text-rose-700 border-rose-200",
     slate:   "bg-slate-100 text-slate-700 border-slate-200",
+    green:   "bg-green-50 text-green-700 border-green-200",
   };
   return (
     <span className={`text-xs px-2.5 py-1 rounded-full border font-medium ${colors[color]}`}>{children}</span>
