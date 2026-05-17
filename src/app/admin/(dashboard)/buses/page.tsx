@@ -39,13 +39,12 @@ export default function BusesPage() {
     setLoading(true)
     const { data: busData } = await supabase
       .from('bus_distribution')
-      .select('*, pilgrims(phone)')
+      .select('*')
       .order('bus_number')
 
     if (busData) {
-      const merged = busData.map(r => ({ ...r, phone: (r.pilgrims as any)?.phone || '' }))
-      setRows(merged)
-      setFiltered(merged)
+      setRows(busData)
+      setFiltered(busData)
     }
     setLoading(false)
   }
