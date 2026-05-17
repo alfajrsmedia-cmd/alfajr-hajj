@@ -32,7 +32,7 @@ export default async function PilgrimPage({
     .eq("pilgrim_id", pilgrimId)
     .maybeSingle();
 
-  const [busRes, cpRes, roommatesRes, messagesRes] = await Promise.all([
+  const [busRes, cpRes, roommatesRes, messagesRes, minaRes] = await Promise.all([
     supabase
       .from("bus_distribution")
       .select("bus_number")
@@ -56,10 +56,16 @@ export default async function PilgrimPage({
       .select("id, message, admin_reply, status, created_at, replied_at")
       .eq("pilgrim_id", pilgrimId)
       .order("created_at", { ascending: false }),
+    supabase
+      .from("mina_camps")
+      .select("tent_number, group_number, gender")
+      .eq("full_name", pilgrim.full_name?.trim())
+      .maybeSingle(),
   ]);
 
   const bus = busRes.data;
   const cp = cpRes.data;
+  const mina = minaRes.data;
   const roommates = (roommatesRes.data as any[]) || [];
   const messages = messagesRes.data || [];
   const group = pilgrim.groups as any;
@@ -189,10 +195,12 @@ export default async function PilgrimPage({
         {/* === المخيمات === */}
         <Section title="⛺ المخيمات">
           <InfoRow label="نوع التسكين" value={cp?.booking_type} />
-          <InfoRow label="مخيم منى" value={undefined} />
+          <InfoRow label="مخيم منى" value={mina?.tent_number ? `خيمة ${mina.tent_number}` : undefined} highlight={!!mina?.tent_number} />
           <InfoRow label="مخيم عرفات" value={undefined} />
           <InfoRow label="مخيم مزدلفة" value={undefined} />
-          <p className="text-xs text-slate-400 pt-2 text-center">سيتم الإعلان عن تفاصيل المخيمات لاحقاً</p>
+          {!mina?.tent_number && (
+            <p className="text-xs text-slate-400 pt-2 text-center">سيتم الإعلان عن تفاصيل المخيمات لاحقاً</p>
+          )}
         </Section>
 
         {/* === زملاء الغرفة === */}
