@@ -13,8 +13,9 @@ type BusItem = {
   bus_number: number
   group_number: number
   full_name: string
-  mobile: string
-  mobile_intl: string
+  campaign: string
+  passport_number: string
+  national_id: string
 }
 
 export default function BusListPage() {
@@ -31,7 +32,7 @@ export default function BusListPage() {
   async function fetchData() {
     setLoading(true)
     const { data } = await supabase
-      .from('bus_list')
+      .from('bus_distribution')
       .select('*')
       .order('bus_number')
     if (data) { setRows(data); setFiltered(data) }
@@ -45,7 +46,8 @@ export default function BusListPage() {
       const q = search.trim()
       result = result.filter((r) =>
         r.full_name?.includes(q) ||
-        r.mobile?.includes(q) ||
+        r.passport_number?.includes(q) ||
+        r.national_id?.includes(q) ||
         String(r.bus_number)?.includes(q) ||
         String(r.group_number)?.includes(q)
       )
@@ -93,8 +95,8 @@ export default function BusListPage() {
                   <th className="px-4 py-3 text-right">الباص</th>
                   <th className="px-4 py-3 text-right">المجموعة</th>
                   <th className="px-4 py-3 text-right">الاسم</th>
-                  <th className="px-4 py-3 text-right">رقم الجوال</th>
-                  <th className="px-4 py-3 text-right">الرقم الدولي</th>
+                  <th className="px-4 py-3 text-right">الحملة</th>
+                  <th className="px-4 py-3 text-right">رقم الجواز</th>
                 </tr>
               </thead>
               <tbody>
@@ -108,8 +110,8 @@ export default function BusListPage() {
                     </td>
                     <td className="px-4 py-3 text-gray-600">{r.group_number}</td>
                     <td className="px-4 py-3 font-medium text-gray-800">{r.full_name}</td>
-                    <td className="px-4 py-3 text-gray-600 font-mono">{r.mobile}</td>
-                    <td className="px-4 py-3 text-gray-500 font-mono text-xs">{r.mobile_intl}</td>
+                    <td className="px-4 py-3 text-gray-600">{r.campaign}</td>
+                    <td className="px-4 py-3 text-gray-600 font-mono text-xs">{r.passport_number}</td>
                   </tr>
                 ))}
               </tbody>
