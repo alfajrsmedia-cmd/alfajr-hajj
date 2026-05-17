@@ -130,7 +130,7 @@ export default function PilgrimProfilePage() {
           <Row label="تاريخ الميلاد"   value={pilgrim.birth_date} />
           <Row label="البريد الإلكتروني" value={pilgrim.email} />
           <Row label="البرنامج"        value={pilgrim.programName} />
-          <Row label="نوع الغرفة"      value={pilgrim.room_type} />
+          <Row label="نوع الحجز"       value={pilgrim.room_type} />
           <Row label="المستوى"         value={pilgrim.level} />
           <Row label="تاريخ السفر ذهاب" value={pilgrim.travel_from} />
           <Row label="تاريخ السفر عودة" value={pilgrim.travel_to} />

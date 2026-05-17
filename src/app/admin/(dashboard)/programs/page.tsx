@@ -13,6 +13,7 @@ interface Pilgrim {
   gender: string | null
   nationality: string | null
   program_id: number | null
+  room_type: string | null
   groups: { group_number: number; leader_name: string | null } | null
   housing_assignments: { rooms: { room_number: string } | null }[]
 }
@@ -39,7 +40,7 @@ export default function ProgramsPage() {
       supabase.from('programs').select('id, name_ar').order('id'),
       supabase
         .from('pilgrims')
-        .select(`id, full_name, english_name, passport_number, permit_number, gender, nationality, program_id,
+        .select(`id, full_name, english_name, passport_number, permit_number, gender, nationality, program_id, room_type,
           groups(group_number, leader_name),
           housing_assignments(rooms(room_number))`)
         .order('full_name'),
@@ -101,7 +102,7 @@ export default function ProgramsPage() {
   function exportCSV() {
     const prog = programsList.find(p => p.id === selectedProgram)?.name_ar || ''
     const rows = [
-      ['#', 'اسم الحاج', 'الاسم بالإنجليزية', 'رقم الجواز', 'رقم التصريح', 'الجنس', 'المجموعة', 'مسؤول المجموعة', 'الدور', 'الغرفة', 'الجنسية'],
+      ['#', 'اسم الحاج', 'الاسم بالإنجليزية', 'رقم الجواز', 'رقم التصريح', 'الجنس', 'المجموعة', 'مسؤول المجموعة', 'نوع الحجز', 'الغرفة', 'الجنسية'],
       ...filtered.map((p, i) => [
         i + 1,
         p.full_name,
@@ -111,6 +112,7 @@ export default function ProgramsPage() {
         GENDER_LABEL[p.gender || ''] || p.gender || '',
         p.groups?.group_number || '',
         p.groups?.leader_name || '',
+        p.room_type || '',
         p.housing_assignments?.[0]?.rooms?.room_number || '',
         p.nationality || '',
       ])
@@ -231,6 +233,7 @@ export default function ProgramsPage() {
                 <th className="text-right px-3 py-3 font-semibold text-slate-600">الجنس</th>
                 <th className="text-right px-3 py-3 font-semibold text-slate-600">المجموعة</th>
                 <th className="text-right px-3 py-3 font-semibold text-slate-600">مسؤول المجموعة</th>
+                <th className="text-right px-3 py-3 font-semibold text-slate-600">نوع الحجز</th>
                 <th className="text-right px-3 py-3 font-semibold text-slate-600">الغرفة</th>
               </tr>
             </thead>
@@ -274,6 +277,11 @@ export default function ProgramsPage() {
                         : <span className="text-slate-300 text-xs">—</span>}
                     </td>
                     <td className="px-3 py-2.5 text-slate-600 text-xs max-w-[160px] truncate">{p.groups?.leader_name || '—'}</td>
+                    <td className="px-3 py-2.5">
+                      {p.room_type
+                        ? <span className="bg-purple-50 text-purple-700 px-2 py-0.5 rounded-full text-xs font-medium border border-purple-200">{p.room_type}</span>
+                        : <span className="text-slate-300 text-xs">—</span>}
+                    </td>
                     <td className="px-3 py-2.5">
                       {room?.room_number
                         ? <span className="bg-blue-50 text-blue-700 px-2 py-0.5 rounded text-xs font-bold">{room.room_number}</span>
