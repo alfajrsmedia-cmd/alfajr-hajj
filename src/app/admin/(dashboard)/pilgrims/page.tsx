@@ -74,16 +74,17 @@ export default function PilgrimsPage() {
                 <th className="text-right px-4 py-3 font-semibold text-slate-700">المسؤول</th>
                 <th className="text-right px-4 py-3 font-semibold text-slate-700">الدور</th>
                 <th className="text-right px-4 py-3 font-semibold text-slate-700">الغرفة</th>
+                <th className="text-right px-4 py-3 font-semibold text-slate-700">الجوال</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={6} className="text-center py-12 text-slate-400">
+                <tr><td colSpan={7} className="text-center py-12 text-slate-400">
                   <div className="animate-spin w-6 h-6 border-2 border-blue-400 border-t-transparent rounded-full mx-auto mb-2"></div>
                   جاري التحميل...
                 </td></tr>
               ) : pilgrims.length === 0 ? (
-                <tr><td colSpan={6} className="text-center py-12 text-slate-400">لا توجد نتائج</td></tr>
+                <tr><td colSpan={7} className="text-center py-12 text-slate-400">لا توجد نتائج</td></tr>
               ) : pilgrims.map((p, i) => {
                 const ha = p.housing_assignments?.[0]
                 const room = ha?.rooms
@@ -103,6 +104,7 @@ export default function PilgrimsPage() {
                     <td className="px-4 py-3">
                       {room?.room_number ? <span className="bg-blue-50 text-blue-700 px-2 py-0.5 rounded text-xs font-bold">{room.room_number}</span> : <span className="text-slate-300 text-xs">—</span>}
                     </td>
+                    <td className="px-4 py-3 text-slate-600 font-mono text-xs">{p.phone || <span className="text-slate-300">—</span>}</td>
                   </tr>
                 )
               })}
