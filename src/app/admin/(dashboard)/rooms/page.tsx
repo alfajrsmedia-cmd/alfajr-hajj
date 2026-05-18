@@ -34,18 +34,18 @@ export default function FloorsPage() {
 
   const stats = useMemo(() => {
     const total = rooms.length
-    const available = rooms.filter(r => (r.housing_assignments?.length || 0) === 0).length
     const full = rooms.filter(r => (r.housing_assignments?.length || 0) >= r.capacity).length
-    const partial = total - available - full
+    const available = total - full
+    const empty = rooms.filter(r => (r.housing_assignments?.length || 0) === 0).length
     const totalCapacity = rooms.reduce((s, r) => s + (r.capacity || 0), 0)
     const totalPilgrims = rooms.reduce((s, r) => s + (r.housing_assignments?.length || 0), 0)
     const availableBeds = totalCapacity - totalPilgrims
-    return { total, available, full, partial, totalCapacity, totalPilgrims, availableBeds }
+    return { total, available, full, empty, totalCapacity, totalPilgrims, availableBeds }
   }, [rooms])
 
   const filteredRooms = useMemo(() => rooms.filter(r => {
     const occupants = r.housing_assignments?.length || 0
-    if (filter === 'available' && occupants !== 0) return false
+    if (filter === 'available' && occupants >= r.capacity) return false
     if (filter === 'full' && occupants < r.capacity) return false
     if (filter === 'partial' && (occupants === 0 || occupants >= r.capacity)) return false
     if (!search) return true
@@ -81,9 +81,9 @@ export default function FloorsPage() {
           </div>
           <div
             onClick={() => setFilter(filter === 'partial' ? 'all' : 'partial')}
-            className={`rounded-xl border p-4 text-center shadow-sm cursor-pointer transition ${filter === 'partial' ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-blue-200 hover:border-blue-400'}`}>
-            <div className={`text-2xl font-bold ${filter === 'partial' ? 'text-white' : 'text-blue-600'}`}>{stats.partial}</div>
-            <div className={`text-xs mt-1 ${filter === 'partial' ? 'text-blue-100' : 'text-blue-600'}`}>غرف جزئية</div>
+            className={`rounded-xl border p-4 text-center shadow-sm cursor-pointer transition ${filter === 'partial' ? 'bg-slate-600 border-slate-600 text-white' : 'bg-white border-slate-200 hover:border-slate-400'}`}>
+            <div className={`text-2xl font-bold ${filter === 'partial' ? 'text-white' : 'text-slate-600'}`}>{stats.empty}</div>
+            <div className={`text-xs mt-1 ${filter === 'partial' ? 'text-slate-100' : 'text-slate-500'}`}>غرف فارغة</div>
           </div>
           <div
             onClick={() => setFilter(filter === 'full' ? 'all' : 'full')}
