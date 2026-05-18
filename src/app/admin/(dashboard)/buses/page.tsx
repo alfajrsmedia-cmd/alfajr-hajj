@@ -31,7 +31,7 @@ export default function BusesPage() {
   const printRef = useRef<HTMLDivElement>(null)
 
   const campaigns = ['الكل', 'الفجر', 'المسعى', 'المصطفى']
-  const buses = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
+  const buses = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17]
 
   useEffect(() => { fetchData() }, [])
 

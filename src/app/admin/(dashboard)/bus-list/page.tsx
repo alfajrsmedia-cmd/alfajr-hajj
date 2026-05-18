@@ -26,7 +26,7 @@ export default function BusListPage() {
   const [activeBus, setActiveBus] = useState(0)
   const [loading, setLoading] = useState(true)
 
-  const buses = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
+  const buses = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17]
 
   useEffect(() => { fetchData() }, [])
 
