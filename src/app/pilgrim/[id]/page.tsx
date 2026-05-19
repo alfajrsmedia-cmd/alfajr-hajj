@@ -18,7 +18,7 @@ export default async function PilgrimPage({
     .select(
       `id, full_name, passport_number, national_id, phone, program, room_type,
        level, travel_from, travel_to, emergency_contact_name, emergency_contact_phone,
-       permit_photo_path,
+       permit_photo_path, permit_number,
        groups(group_number, group_name, leader_name, leader_phone)`
     )
     .eq("id", pilgrimId)
@@ -95,9 +95,9 @@ export default async function PilgrimPage({
               <PilgrimQR data={permitFileUrl} />
             </div>
             <div className="flex-1 min-w-0">
-              {cp?.ref_number && (
+              {pilgrim.permit_number && (
                 <p className="text-xs text-emerald-300 mb-1">
-                  رقم التصريح: <span className="font-bold text-emerald-100">{cp.ref_number}</span>
+                  رقم التصريح: <span className="font-bold text-emerald-100">{pilgrim.permit_number}</span>
                 </p>
               )}
               <h2 className="text-xl font-black text-white leading-tight">{pilgrim.full_name}</h2>
@@ -188,8 +188,19 @@ export default async function PilgrimPage({
           <InfoRow label="نوع الغرفة" value={pilgrim.room_type} />
           <InfoRow label="تاريخ السفر" value={pilgrim.travel_from ? String(pilgrim.travel_from) : undefined} />
           <InfoRow label="تاريخ العودة" value={pilgrim.travel_to ? String(pilgrim.travel_to) : undefined} />
-          <InfoRow label="درجة السفر" value={undefined} />
-          <InfoRow label="شركة الطيران" value={undefined} />
+          <InfoRow label="رقم الجواز" value={pilgrim.passport_number} />
+          <InfoRow label="رقم الهوية" value={pilgrim.national_id} />
+          {pilgrim.phone ? (
+            <div className="flex items-center justify-between py-2.5">
+              <span className="text-sm text-slate-500">رقم الجوال</span>
+              <a href={`tel:${pilgrim.phone}`} className="text-sm font-semibold text-emerald-700 hover:underline">
+                📱 {pilgrim.phone}
+              </a>
+            </div>
+          ) : (
+            <InfoRow label="رقم الجوال" value={undefined} />
+          )}
+          <InfoRow label="رقم التصريح" value={pilgrim.permit_number ? String(pilgrim.permit_number) : undefined} />
         </Section>
 
         {/* === المخيمات === */}
